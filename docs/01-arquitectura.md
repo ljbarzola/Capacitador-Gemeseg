@@ -15,7 +15,7 @@
 | Autenticación | **Firebase Authentication** | Email/contraseña, verificación y reset ya resueltos; Google Sign-In opcional |
 | Archivos | **Cloud Storage** (URLs firmadas) | Subida propia de videos e imágenes |
 | CI/CD | **Cloud Build** (trigger desde GitHub) | Build de imagen → deploy a Cloud Run; secretos en Secret Manager |
-| Dominio | `capacitacion.gemeseg.com` → Cloud Run | Registro DNS + certificado gestionado |
+| Dominio | URL `*.run.app` al inicio; `capacitacion.gemeseg.com` → Cloud Run después (opcional) | Registro DNS en cPanel + certificado gestionado |
 | Correo | SendGrid/Resend o Firebase Trigger Email | Verificación, asignación, recordatorios |
 | Recordatorios | Cloud Scheduler → endpoint protegido | Pendientes y vencimientos de certificado |
 | Certificados PDF | Generación en servidor + código QR | Verificación pública por código |

@@ -38,9 +38,11 @@ Plataforma de capacitación en línea para Gemeseg (empresa de seguridad), despl
 | Tema | Decisión |
 |---|---|
 | Stack | **Confirmado**: Next.js + PostgreSQL (Cloud SQL) + Firebase Auth + Cloud Storage + Cloud Run + Cloud Build |
-| DNI | **Obligatorio**, único por usuario, y aparece en el certificado |
+| Documento de identidad | **Cédula ecuatoriana** (el servicio opera en Ecuador). Obligatoria, única por usuario, validada (10 dígitos, módulo 10) y aparece en el certificado. Campo `cedula` en BD; validador en `src/lib/cedula.ts` |
 | Repositorio remoto | `https://github.com/ljbarzola/Capacitador-Gemeseg` (push autorizado) |
-| Infraestructura GCP | Se redacta guía paso a paso en [02-gcp-setup.md](02-gcp-setup.md); aún no se crea nada en la nube |
+| Infraestructura GCP | **Proyecto nuevo**. Guía paso a paso en [02-gcp-setup.md](02-gcp-setup.md); aún no se crea nada en la nube |
+| Dominio | Prioridad baja: lo importante es que **funcione**, aunque sea con la URL por defecto de Google/Firebase. El DNS de `gemeseg.com` lo administra el usuario (cPanel); cuando se necesite, se le entregan los registros a crear |
+| Identidad visual | Logos en `public/brand/`. Azul marino `#100F31` y naranja `#EE3B1B` (muestreados del logotipo). Ícono: la "M" naranja |
 
 ### No elegido / no indicado
 
@@ -51,10 +53,11 @@ Plataforma de capacitación en línea para Gemeseg (empresa de seguridad), despl
 ## Preguntas abiertas
 
 - [x] ~~Confirmar stack recomendado~~ — confirmado en sesión 2.
-- [ ] ¿Proyecto GCP/Firebase existente o uno nuevo? ¿Quién administra el DNS de `gemeseg.com` para apuntar `capacitacion`?
-- [x] ~~DNI obligatorio~~ — sí, y sale en el certificado (sesión 2). Falta definir formato de validación (¿8 dígitos? ¿acepta carné de extranjería/pasaporte?).
+- [x] ~~Proyecto GCP/Firebase y DNS~~ — proyecto nuevo; el usuario administra el DNS (sesión 2).
+- [x] ~~DNI obligatorio~~ — cédula ecuatoriana, obligatoria y en el certificado (sesión 2).
+- [ ] ¿Se debe aceptar también pasaporte para extranjeros? Por ahora solo se valida cédula ecuatoriana.
 - [ ] Tamaño máximo de video subido y volumen esperado de multimedia (afecta costos de Storage).
-- [ ] Identidad visual: logo, colores, tipografía.
+- [ ] Tipografía (logos y colores ya recibidos).
 - [ ] Vigencia típica de recertificación (¿12 meses?) y plantilla del certificado.
 - [ ] Proveedor de correo y remitente (p. ej. `capacitacion@gemeseg.com`).
 - [ ] Política de privacidad / retención de datos personales.

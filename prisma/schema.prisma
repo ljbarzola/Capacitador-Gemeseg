@@ -24,7 +24,7 @@ model User {
   email       String   @unique
   firstNames  String
   lastNames   String
-  dni         String   @unique // obligatorio; identifica al guardia y sale en el certificado
+  cedula      String   @unique // cédula ecuatoriana (10 dígitos, validada); identifica al guardia y sale en el certificado
   role        Role     @default(STUDENT)
   active      Boolean  @default(true)
   extraFields Json? // respuestas a campos configurables (ver RegistrationField)

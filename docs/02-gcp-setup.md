@@ -1,6 +1,6 @@
 # 02 · Guía de configuración de Google Cloud
 
-> Pasos para dejar lista la infraestructura. Nada de esto está creado todavía: requiere decidir si se usa un proyecto GCP existente o uno nuevo y quién administra el DNS de `gemeseg.com` (ver preguntas abiertas en [00-requisitos.md](00-requisitos.md)).
+> Pasos para dejar lista la infraestructura. Nada de esto está creado todavía. Decisiones tomadas (ver [00-requisitos.md](00-requisitos.md)): se crea un **proyecto GCP nuevo**, y el dominio propio es opcional y va al final.
 >
 > Los valores entre `<...>` se reemplazan. La región `southamerica-west1` (Santiago) es una sugerencia sin verificar: confirmar que todos los servicios (en especial el mapeo de dominio de Cloud Run) estén disponibles allí, y revisar precios y latencia antes de fijarla. Los comandos de esta guía no se han ejecutado; validarlos al crear la infraestructura.
 
@@ -57,7 +57,7 @@ printf '%s' '<CADENA_ANTERIOR>' | gcloud secrets create DATABASE_URL --data-file
 
 1. En la [consola de Firebase](https://console.firebase.google.com) → **Agregar proyecto** → elegir el proyecto GCP existente.
 2. **Authentication → Método de acceso**: habilitar *Correo electrónico/contraseña* (y Google, si se desea).
-3. **Authentication → Configuración → Dominios autorizados**: agregar `capacitacion.gemeseg.com`.
+3. **Authentication → Configuración → Dominios autorizados**: agregar la URL por defecto de Cloud Run (`<servicio>-<hash>.<region>.run.app`, sin `https://`) y, cuando exista, `capacitacion.gemeseg.com`.
 4. Crear una *app web* para obtener la configuración pública del cliente (`apiKey`, `authDomain`, `projectId`).
 5. Para el backend se usa la cuenta de servicio de Cloud Run (credenciales por defecto de la aplicación); no se descarga ninguna llave.
 
@@ -88,7 +88,9 @@ La cuenta de Cloud Build (`<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com`) nec
 2. Crear un activador con evento *Push a una rama*, rama `^main$`, archivo de configuración `cloudbuild.yaml`.
 3. Definir la sustitución `_SQL_INSTANCE` = `<PROJECT_ID>:southamerica-west1:capacitador-db`.
 
-## 8. Dominio `capacitacion.gemeseg.com`
+## 8. Dominio `capacitacion.gemeseg.com` (opcional, se hace al final)
+
+Para que la plataforma funcione **no hace falta dominio propio**: Cloud Run entrega una URL `*.run.app` con HTTPS. Este paso se deja para cuando el usuario quiera usar `capacitacion.gemeseg.com`; el DNS lo administra él en su cPanel.
 
 ```bash
 gcloud beta run domain-mappings create \
@@ -96,7 +98,7 @@ gcloud beta run domain-mappings create \
   --region=southamerica-west1
 ```
 
-El comando devuelve los registros DNS (normalmente un `CNAME` a `ghs.googlehosted.com`). **Quien administre el DNS de `gemeseg.com` debe crearlos.** El certificado SSL lo emite Google automáticamente una vez propagado el DNS.
+El comando devuelve los registros DNS (normalmente un `CNAME` a `ghs.googlehosted.com`). **Hay que crearlos en el cPanel de `gemeseg.com`.** El certificado SSL lo emite Google automáticamente una vez propagado el DNS.
 
 ## 9. Migraciones en producción (pendiente)
 
@@ -116,5 +118,5 @@ La imagen de producción no incluye el CLI de Prisma. Opciones a evaluar al crea
 - [ ] Bucket de medios
 - [ ] Permisos de cuentas de servicio
 - [ ] Trigger de Cloud Build
-- [ ] Mapeo de dominio y DNS
+- [ ] Mapeo de dominio y DNS (opcional)
 - [ ] Estrategia de migraciones

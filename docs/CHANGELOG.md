@@ -10,6 +10,9 @@
 - `Dockerfile` multi-etapa para Cloud Run; imagen construida y probada contra la base local.
 - `cloudbuild.yaml` (build, push y deploy) y guía [02-gcp-setup.md](02-gcp-setup.md). No se ha ejecutado nada contra GCP.
 - Pendiente: migraciones en producción (la imagen no incluye el CLI de Prisma).
+- Decisiones posteriores: proyecto GCP nuevo; dominio propio opcional (DNS lo administra el usuario en cPanel); documento = **cédula ecuatoriana**.
+- Campo `User.dni` renombrado a `cedula` (migración `rename_dni_to_cedula`, conserva datos) y validador módulo 10 en `src/lib/cedula.ts`.
+- Identidad visual: logos en `public/brand/`, ícono de la app, colores `#100F31` y `#EE3B1B`; portada provisional en español reemplaza la plantilla de Next.js.
 
 ## 2026-09-30 — Sesión 1
 - Repositorio `Capacitador-Gemeseg` estaba vacío; se clonó y se creó la rama `main`.

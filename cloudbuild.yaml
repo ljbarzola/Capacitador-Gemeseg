@@ -4,10 +4,10 @@
 # PENDIENTE: paso de migraciones (prisma migrate deploy) contra Cloud SQL.
 # La imagen standalone no incluye el CLI de Prisma; se resuelve al crear la instancia.
 substitutions:
-  _REGION: southamerica-west1
+  _REGION: us-east1
   _REPO: capacitador
   _SERVICE: capacitador-gemeseg
-  _SQL_INSTANCE: "" # formato PROYECTO:REGION:INSTANCIA
+  _SQL_INSTANCE: capacitaciongemeseg:us-east1:capacitador-db # PROYECTO:REGION:INSTANCIA
 
 steps:
   - id: build

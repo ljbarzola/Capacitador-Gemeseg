@@ -2,7 +2,7 @@
 
 > Pasos para dejar lista la infraestructura. Nada de esto está creado todavía. Decisiones tomadas (ver [00-requisitos.md](00-requisitos.md)): se crea un **proyecto GCP nuevo**, y el dominio propio es opcional y va al final.
 >
-> Los valores entre `<...>` se reemplazan. La región `southamerica-west1` (Santiago) es una sugerencia sin verificar: confirmar que todos los servicios (en especial el mapeo de dominio de Cloud Run) estén disponibles allí, y revisar precios y latencia antes de fijarla. Los comandos de esta guía no se han ejecutado; validarlos al crear la infraestructura.
+> Los valores entre `<...>` se reemplazan. Región elegida: `us-east1`. Los pasos 1 a 5 y el 3 (Cloud SQL, `db-f1-micro`) ya se ejecutaron en el proyecto `capacitaciongemeseg` (ver [CHANGELOG](CHANGELOG.md)); el resto sigue como referencia y hay que validarlo al ejecutarlo. Mapeo de dominio de Cloud Run: confirmar disponibilidad en la región antes de usarlo.
 
 ## 0. Requisitos previos
 
@@ -27,15 +27,15 @@ gcloud services enable run.googleapis.com sqladmin.googleapis.com \
 
 ```bash
 gcloud artifacts repositories create capacitador \
-  --repository-format=docker --location=southamerica-west1
+  --repository-format=docker --location=us-east1
 ```
 
 ## 3. Cloud SQL (PostgreSQL)
 
 ```bash
 gcloud sql instances create capacitador-db \
-  --database-version=POSTGRES_16 --tier=db-custom-1-3840 \
-  --region=southamerica-west1
+  --database-version=POSTGRES_16 --edition=ENTERPRISE --tier=db-f1-micro \
+  --region=us-east1
 
 gcloud sql databases create capacitador --instance=capacitador-db
 gcloud sql users create app --instance=capacitador-db --password=<PASSWORD_SEGURA>
@@ -44,7 +44,7 @@ gcloud sql users create app --instance=capacitador-db --password=<PASSWORD_SEGUR
 La conexión desde Cloud Run usa el socket de Cloud SQL, no una IP pública:
 
 ```
-postgresql://app:<PASSWORD>@localhost/capacitador?host=/cloudsql/<PROJECT_ID>:southamerica-west1:capacitador-db
+postgresql://app:<PASSWORD>@localhost/capacitador?host=/cloudsql/<PROJECT_ID>:us-east1:capacitador-db
 ```
 
 Guardar esa cadena como secreto:
@@ -65,7 +65,7 @@ printf '%s' '<CADENA_ANTERIOR>' | gcloud secrets create DATABASE_URL --data-file
 
 ```bash
 gcloud storage buckets create gs://<PROJECT_ID>-capacitador-media \
-  --location=southamerica-west1 --uniform-bucket-level-access
+  --location=us-east1 --uniform-bucket-level-access
 ```
 
 El bucket es **privado**; la app entrega archivos con URLs firmadas. Hay que configurar CORS para subida directa desde el navegador cuando se implemente esa función.
@@ -86,7 +86,7 @@ La cuenta de Cloud Build (`<PROJECT_NUMBER>@cloudbuild.gserviceaccount.com`) nec
 
 1. Consola → **Cloud Build → Activadores → Conectar repositorio** → GitHub → `ljbarzola/Capacitador-Gemeseg`.
 2. Crear un activador con evento *Push a una rama*, rama `^main$`, archivo de configuración `cloudbuild.yaml`.
-3. Definir la sustitución `_SQL_INSTANCE` = `<PROJECT_ID>:southamerica-west1:capacitador-db`.
+3. Definir la sustitución `_SQL_INSTANCE` = `<PROJECT_ID>:us-east1:capacitador-db`.
 
 ## 8. Dominio `capacitacion.gemeseg.com` (opcional, se hace al final)
 
@@ -95,7 +95,7 @@ Para que la plataforma funcione **no hace falta dominio propio**: Cloud Run entr
 ```bash
 gcloud beta run domain-mappings create \
   --service=capacitador-gemeseg --domain=capacitacion.gemeseg.com \
-  --region=southamerica-west1
+  --region=us-east1
 ```
 
 El comando devuelve los registros DNS (normalmente un `CNAME` a `ghs.googlehosted.com`). **Hay que crearlos en el cPanel de `gemeseg.com`.** El certificado SSL lo emite Google automáticamente una vez propagado el DNS.

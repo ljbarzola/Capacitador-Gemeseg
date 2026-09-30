@@ -5,7 +5,11 @@
 - APIs habilitadas: Cloud Run, Cloud SQL Admin, Cloud Build, Artifact Registry, Secret Manager, Cloud Storage, Identity Toolkit y Firebase.
 - Firebase agregado al proyecto; Authentication con correo/contraseña habilitado.
 - App web registrada en Firebase (`1:636310739015:web:f795554051ec1629c7f962`); su configuración pública va en `.env` (local, ignorado) y los nombres de variable en `.env.example`.
-- Pendiente: Cloud SQL, Artifact Registry, secretos, bucket, permisos, trigger de Cloud Build, despliegue.
+- Región elegida: `us-east1`. Cloud SQL `capacitador-db` (PostgreSQL 16, edición Enterprise, `db-f1-micro`, sin alta disponibilidad, 10 GB con autoaumento, respaldo diario 05:00 UTC). Conexión: `capacitaciongemeseg:us-east1:capacitador-db`. Se subirá a `db-custom-1-3840` cuando haya usuarios reales.
+- Base `capacitador` y usuario `app`; la contraseña se generó al azar y vive **solo** en el secreto `DATABASE_URL` de Secret Manager.
+- Artifact Registry `capacitador` (Docker, `us-east1`) y bucket privado `gs://capacitaciongemeseg-media` (acceso público bloqueado).
+- Permisos de la cuenta de servicio de Compute (la que ejecuta Cloud Run): `cloudsql.client`, acceso al secreto `DATABASE_URL` y `storage.objectAdmin` sobre el bucket.
+- Pendiente: conectar GitHub con Cloud Build, permisos de Cloud Build, primer despliegue, migraciones en producción (el usuario `app` necesitará permiso de creación en el esquema `public`).
 
 ## 2026-09-30 — Sesión 2 (Fase 0, parte local)
 - Stack confirmado; DNI obligatorio y en el certificado ([00-requisitos.md](00-requisitos.md)).

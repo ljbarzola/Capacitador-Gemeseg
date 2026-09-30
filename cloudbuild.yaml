@@ -1,0 +1,45 @@
+# Cloud Build: construye la imagen, la sube a Artifact Registry y despliega a Cloud Run.
+# Se dispara desde un trigger de GitHub sobre la rama main (ver docs/02-gcp-setup.md).
+#
+# PENDIENTE: paso de migraciones (prisma migrate deploy) contra Cloud SQL.
+# La imagen standalone no incluye el CLI de Prisma; se resuelve al crear la instancia.
+substitutions:
+  _REGION: southamerica-west1
+  _REPO: capacitador
+  _SERVICE: capacitador-gemeseg
+  _SQL_INSTANCE: "" # formato PROYECTO:REGION:INSTANCIA
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+      - .
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --add-cloudsql-instances=${_SQL_INSTANCE}
+      - --set-secrets=DATABASE_URL=DATABASE_URL:latest
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+
+options:
+  logging: CLOUD_LOGGING_ONLY

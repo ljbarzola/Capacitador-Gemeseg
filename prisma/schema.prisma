@@ -1,0 +1,251 @@
+// Modelo de datos de Capacitador Gemeseg.
+// Jerarquía de contenido: Course -> Module -> Submodule -> Lesson (+ Quiz opcional por submódulo).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────── Usuarios y grupos ─────────────
+
+enum Role {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}
+
+model User {
+  id          String   @id @default(cuid())
+  firebaseUid String   @unique
+  email       String   @unique
+  firstNames  String
+  lastNames   String
+  dni         String   @unique // obligatorio; identifica al guardia y sale en el certificado
+  role        Role     @default(STUDENT)
+  active      Boolean  @default(true)
+  extraFields Json? // respuestas a campos configurables (ver RegistrationField)
+  groupId     String?
+  group       Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  enrollments    Enrollment[]
+  assignedByMe   Enrollment[]     @relation("AssignedBy")
+  lessonProgress LessonProgress[]
+  quizAttempts   QuizAttempt[]
+  feedback       CourseFeedback[]
+  coursesCreated Course[]
+
+  @@index([groupId])
+}
+
+// Empresa / área / sede. Sirve para filtrar y asignar, sin aislamiento entre empresas.
+model Group {
+  id    String @id @default(cuid())
+  name  String @unique
+  users User[]
+}
+
+// Campos adicionales de registro configurables desde el panel.
+model RegistrationField {
+  id       String  @id @default(cuid())
+  key      String  @unique
+  label    String
+  required Boolean @default(false)
+  order    Int     @default(0)
+  active   Boolean @default(true)
+}
+
+// ───────────── Contenido ─────────────
+
+enum Progression {
+  SEQUENTIAL // hay que completar en orden; lo valida el backend
+  FREE
+}
+
+model Course {
+  id           String      @id @default(cuid())
+  title        String
+  description  String?
+  coverUrl     String?
+  progression  Progression @default(FREE)
+  published    Boolean     @default(false)
+  recertMonths Int? // vigencia del certificado; null = no vence
+  createdById  String
+  createdBy    User        @relation(fields: [createdById], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  modules     Module[]
+  enrollments Enrollment[]
+  feedback    CourseFeedback[]
+}
+
+model Module {
+  id       String @id @default(cuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title    String
+  order    Int
+
+  submodules Submodule[]
+
+  @@unique([courseId, order])
+}
+
+model Submodule {
+  id       String @id @default(cuid())
+  moduleId String
+  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title    String
+  order    Int
+
+  lessons Lesson[]
+  quiz    Quiz?
+
+  @@unique([moduleId, order])
+}
+
+enum LessonType {
+  VIDEO_UPLOAD // video propio en Cloud Storage
+  VIDEO_EMBED // YouTube / Vimeo
+  IMAGE
+  LINK
+  TEXT
+  FILE
+}
+
+model Lesson {
+  id          String     @id @default(cuid())
+  submoduleId String
+  submodule   Submodule  @relation(fields: [submoduleId], references: [id], onDelete: Cascade)
+  title       String
+  type        LessonType
+  order       Int
+  body        String? // texto enriquecido (TEXT)
+  url         String? // enlace o embed (LINK, VIDEO_EMBED)
+  storagePath String? // objeto en Cloud Storage (VIDEO_UPLOAD, IMAGE, FILE)
+
+  progress LessonProgress[]
+
+  @@unique([submoduleId, order])
+}
+
+// ───────────── Exámenes ─────────────
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+}
+
+model Quiz {
+  id               String    @id @default(cuid())
+  submoduleId      String    @unique
+  submodule        Submodule @relation(fields: [submoduleId], references: [id], onDelete: Cascade)
+  passingScore     Int       @default(70) // porcentaje
+  shuffleQuestions Boolean   @default(true)
+  shuffleOptions   Boolean   @default(true)
+  maxAttempts      Int? // null = ilimitado (desactivado por defecto)
+  timeLimitMinutes Int? // null = sin límite (desactivado por defecto)
+
+  questions Question[]
+  attempts  QuizAttempt[]
+}
+
+model Question {
+  id     String       @id @default(cuid())
+  quizId String
+  quiz   Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  type   QuestionType
+  text   String
+  order  Int
+
+  options Option[]
+}
+
+model Option {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  isCorrect  Boolean  @default(false) // nunca se envía al navegador antes de calificar
+}
+
+model QuizAttempt {
+  id         String   @id @default(cuid())
+  quizId     String
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers    Json // { questionId: [optionId, ...] }
+  score      Int // porcentaje obtenido
+  passed     Boolean
+  startedAt  DateTime @default(now())
+  finishedAt DateTime @default(now())
+
+  @@index([userId, quizId])
+}
+
+// ───────────── Inscripción, avance y certificados ─────────────
+
+enum EnrollmentStatus {
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Enrollment {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId     String
+  course       Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  assignedById String?
+  assignedBy   User?            @relation("AssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+  status       EnrollmentStatus @default(ASSIGNED)
+  dueAt        DateTime?
+  assignedAt   DateTime         @default(now())
+  completedAt  DateTime?
+
+  certificate Certificate?
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+}
+
+model LessonProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt DateTime @default(now())
+
+  @@unique([userId, lessonId])
+}
+
+model Certificate {
+  id           String     @id @default(cuid())
+  code         String     @unique // verificación pública vía QR
+  enrollmentId String     @unique
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  issuedAt     DateTime   @default(now())
+  expiresAt    DateTime? // según Course.recertMonths
+}
+
+model CourseFeedback {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}

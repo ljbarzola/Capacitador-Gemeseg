@@ -33,6 +33,15 @@ Plataforma de capacitación en línea para Gemeseg (empresa de seguridad), despl
 | Fase 2 | Dashboard de avance, certificados PDF, recertificación |
 | Stack | **Pendiente de confirmar** (el usuario pidió definirlo después de aclarar el contexto). Recomendación en [01-arquitectura.md](01-arquitectura.md) |
 
+## Sesión 2 — 2026-09-30
+
+| Tema | Decisión |
+|---|---|
+| Stack | **Confirmado**: Next.js + PostgreSQL (Cloud SQL) + Firebase Auth + Cloud Storage + Cloud Run + Cloud Build |
+| DNI | **Obligatorio**, único por usuario, y aparece en el certificado |
+| Repositorio remoto | `https://github.com/ljbarzola/Capacitador-Gemeseg` (push autorizado) |
+| Infraestructura GCP | Se redacta guía paso a paso en [02-gcp-setup.md](02-gcp-setup.md); aún no se crea nada en la nube |
+
 ### No elegido / no indicado
 
 - Intentos máximos por examen y tiempo límite: no se seleccionaron → quedan **opcionales y desactivados por defecto**.
@@ -41,9 +50,9 @@ Plataforma de capacitación en línea para Gemeseg (empresa de seguridad), despl
 
 ## Preguntas abiertas
 
-- [ ] Confirmar stack recomendado (Next.js + Cloud SQL (PostgreSQL) + Firebase Auth + Cloud Run).
+- [x] ~~Confirmar stack recomendado~~ — confirmado en sesión 2.
 - [ ] ¿Proyecto GCP/Firebase existente o uno nuevo? ¿Quién administra el DNS de `gemeseg.com` para apuntar `capacitacion`?
-- [ ] ¿DNI/documento de identidad obligatorio (para identificar al guardia y mostrarlo en el certificado)?
+- [x] ~~DNI obligatorio~~ — sí, y sale en el certificado (sesión 2). Falta definir formato de validación (¿8 dígitos? ¿acepta carné de extranjería/pasaporte?).
 - [ ] Tamaño máximo de video subido y volumen esperado de multimedia (afecta costos de Storage).
 - [ ] Identidad visual: logo, colores, tipografía.
 - [ ] Vigencia típica de recertificación (¿12 meses?) y plantilla del certificado.

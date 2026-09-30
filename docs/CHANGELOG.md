@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-30 — Sesión 2 (Fase 0, parte local)
+- Stack confirmado; DNI obligatorio y en el certificado ([00-requisitos.md](00-requisitos.md)).
+- Proyecto Next.js 16 + TypeScript + Tailwind 4 creado en la raíz del repo, con `output: "standalone"`.
+- Prisma 7.10.0 (fijada, sin usar el release candidate 8) con adaptador `pg`. Esquema completo y migración inicial `init` en `prisma/`.
+- `src/lib/prisma.ts`: cliente creado al primer uso, para que `next build` no exija `DATABASE_URL`.
+- Endpoint `GET /api/health` (comprueba la base de datos).
+- `docker-compose.yml` con PostgreSQL 16 local en el puerto **5433** (el 5432 estaba ocupado en la máquina de desarrollo).
+- `Dockerfile` multi-etapa para Cloud Run; imagen construida y probada contra la base local.
+- `cloudbuild.yaml` (build, push y deploy) y guía [02-gcp-setup.md](02-gcp-setup.md). No se ha ejecutado nada contra GCP.
+- Pendiente: migraciones en producción (la imagen no incluye el CLI de Prisma).
+
 ## 2026-09-30 — Sesión 1
 - Repositorio `Capacitador-Gemeseg` estaba vacío; se clonó y se creó la rama `main`.
 - Ronda de preguntas de requisitos con el usuario; respuestas registradas en [00-requisitos.md](00-requisitos.md).

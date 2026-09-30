@@ -1,6 +1,10 @@
 # 01 · Arquitectura
 
-> Estado: **propuesta, pendiente de confirmación del usuario.**
+> Estado: **stack confirmado por el usuario el 2026-09-30.**
+>
+> Esquema de datos: [prisma/schema.prisma](../prisma/schema.prisma). Infraestructura: [02-gcp-setup.md](02-gcp-setup.md).
+>
+> Versiones en uso: Next.js 16, React 19, Tailwind 4, Prisma 7.10 (fijada; la 8 sigue en release candidate) con `@prisma/adapter-pg`, PostgreSQL 16.
 
 ## Stack recomendado
 

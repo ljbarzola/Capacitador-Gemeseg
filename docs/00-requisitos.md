@@ -40,7 +40,7 @@ Plataforma de capacitación en línea para Gemeseg (empresa de seguridad), despl
 | Stack | **Confirmado**: Next.js + PostgreSQL (Cloud SQL) + Firebase Auth + Cloud Storage + Cloud Run + Cloud Build |
 | Documento de identidad | **Cédula ecuatoriana** (el servicio opera en Ecuador). Obligatoria, única por usuario, validada (10 dígitos, módulo 10) y aparece en el certificado. Campo `cedula` en BD; validador en `src/lib/cedula.ts` |
 | Repositorio remoto | `https://github.com/ljbarzola/Capacitador-Gemeseg` (push autorizado) |
-| Infraestructura GCP | **Proyecto nuevo**. Guía paso a paso en [02-gcp-setup.md](02-gcp-setup.md); aún no se crea nada en la nube |
+| Infraestructura GCP | **Proyecto nuevo**: `capacitaciongemeseg` (número 636310739015), cuenta `sistemas@gemeseg.com`. Guía en [02-gcp-setup.md](02-gcp-setup.md); avance en [CHANGELOG](CHANGELOG.md) |
 | Dominio | Prioridad baja: lo importante es que **funcione**, aunque sea con la URL por defecto de Google/Firebase. El DNS de `gemeseg.com` lo administra el usuario (cPanel); cuando se necesite, se le entregan los registros a crear |
 | Identidad visual | Logos en `public/brand/`. Azul marino `#100F31` y naranja `#EE3B1B` (muestreados del logotipo). Ícono: la "M" naranja |
 

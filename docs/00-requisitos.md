@@ -46,6 +46,7 @@ Plataforma de capacitación en línea para Gemeseg (empresa de seguridad), despl
 | Cédula | **Exactamente 10 números**, nada más (2026-10-01). Sin validar dígito verificador ni aceptar pasaporte |
 | Certificados | Solo PDF descargable en la plataforma, con logos, nombre, cédula, curso y fechas; **no se envían por correo**. Vigencia **12 meses por defecto, configurable por curso** |
 | Correos automáticos | **Descartados** (asignación, recordatorios y certificados). Todo se consulta en la plataforma |
+| Campos de registro | Configurables por el administrador (texto o lista); contraseñas iniciales de cuentas importadas se entregan por CSV descargable y se cambian dentro de la plataforma (2026-10-01) |
 | Dominio | Prioridad baja: lo importante es que **funcione**, aunque sea con la URL por defecto de Google/Firebase. El DNS de `gemeseg.com` lo administra el usuario (cPanel); cuando se necesite, se le entregan los registros a crear |
 | Identidad visual | Logos en `public/brand/`. Azul marino `#100F31` y naranja `#EE3B1B` (muestreados del logotipo). Ícono: la "M" naranja |
 
@@ -65,5 +66,5 @@ Plataforma de capacitación en línea para Gemeseg (empresa de seguridad), despl
 - [ ] Tipografía (logos y colores ya recibidos).
 - [x] ~~Vigencia de recertificación y plantilla~~ — 12 meses configurable; PDF con logos generado por la plataforma.
 - [x] ~~Proveedor de correo~~ — no se enviarán correos.
-- [ ] Política de privacidad / retención de datos personales.
+- [ ] Política de privacidad / retención de datos personales (la plataforma guarda nombre, cédula, correo, avance y auditoría).
 - [ ] ¿Quién crea los primeros Administradores/Instructores? (propuesta: se siembran manualmente; luego el admin promueve usuarios).

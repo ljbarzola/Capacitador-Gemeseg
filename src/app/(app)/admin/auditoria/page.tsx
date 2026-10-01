@@ -102,7 +102,7 @@ export default async function AuditPage({
           <TableWrap minWidth={820}>
             <thead>
               <tr>
-                <Th className="w-44">Fecha</Th>
+                <Th className="w-52">Fecha</Th>
                 <Th className="w-48">Persona</Th>
                 <Th className="w-56">Acción</Th>
                 <Th>Detalle</Th>
@@ -111,7 +111,7 @@ export default async function AuditPage({
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id}>
-                  <Td className="text-zinc-600">{formatDateTime(row.createdAt)}</Td>
+                  <Td className="whitespace-nowrap text-zinc-600">{formatDateTime(row.createdAt)}</Td>
                   <Td className="font-medium">{row.actorName}</Td>
                   <Td className="text-zinc-700">{AUDIT_ACTIONS[row.action as keyof typeof AUDIT_ACTIONS] ?? row.action}</Td>
                   <Td className="text-zinc-700">{row.summary}</Td>

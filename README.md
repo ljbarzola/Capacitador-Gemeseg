@@ -2,7 +2,7 @@
 
 Plataforma de capacitación en línea de Gemeseg — `capacitacion.gemeseg.com`.
 
-Cursos → módulos → submódulos → lecciones (video, imagen, enlace, texto, archivo) con exámenes por submódulo, asignación de cursos, seguimiento de avance para RR.HH./instructores con exportación a Excel, certificados en PDF con verificación pública y recertificación.
+Cursos → módulos → submódulos → lecciones (video, imagen, enlace, texto, archivo) con exámenes por submódulo, asignación de cursos, seguimiento de avance para RR.HH./instructores con exportación a Excel, certificados en PDF con verificación pública y recertificación, campos de registro configurables, importación de usuarios por CSV y auditoría de acciones.
 
 ## Desarrollo local
 
@@ -38,4 +38,4 @@ Para probar el inicio de sesión con Firebase en local hace falta `gcloud auth a
 - [Roadmap](docs/05-roadmap.md)
 - [Changelog](docs/CHANGELOG.md)
 
-> Estado: Fases 0, 1 y 2 completas y en producción. Siguiente: Fase 3 (auditoría, campos de registro configurables, importación CSV); ver roadmap.
+> Estado: Fases 0, 1, 2 y 3 completas y en producción. Pendiente solo el dominio propio (opcional); ver roadmap.

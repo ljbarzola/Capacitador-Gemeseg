@@ -1,8 +1,9 @@
 # Cloud Build: construye la imagen, la sube a Artifact Registry y despliega a Cloud Run.
 # Se dispara desde un trigger de GitHub sobre la rama main (ver docs/02-gcp-setup.md).
 #
-# PENDIENTE: paso de migraciones (prisma migrate deploy) contra Cloud SQL.
-# La imagen standalone no incluye el CLI de Prisma; se resuelve al crear la instancia.
+# El paso "migrate" aplica las migraciones de Prisma antes de desplegar. La imagen
+# standalone no incluye el CLI de Prisma, asi que se corre aqui con el Cloud SQL Auth
+# Proxy abriendo el mismo socket /cloudsql que usa Cloud Run (la URL del secreto es valida).
 substitutions:
   _REGION: us-east1
   _REPO: capacitador
@@ -24,6 +25,26 @@ steps:
       - push
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
 
+  - id: migrate
+    name: node:24-alpine
+    entrypoint: sh
+    secretEnv: [DATABASE_URL]
+    args:
+      - -c
+      - |
+        set -e
+        apk add --no-cache openssl >/dev/null
+        mkdir -p /cloudsql
+        wget -q -O /usr/local/bin/cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.14.0/cloud-sql-proxy.linux.amd64
+        chmod +x /usr/local/bin/cloud-sql-proxy
+        cloud-sql-proxy --unix-socket /cloudsql ${_SQL_INSTANCE} &
+        for i in $(seq 1 30); do
+          [ -S /cloudsql/${_SQL_INSTANCE}/.s.PGSQL.5432 ] && break
+          sleep 1
+        done
+        npm ci
+        npx prisma migrate deploy
+
   - id: deploy
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
@@ -40,6 +61,11 @@ steps:
 
 images:
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/DATABASE_URL/versions/latest
+      env: DATABASE_URL
 
 options:
   logging: CLOUD_LOGGING_ONLY

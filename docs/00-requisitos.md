@@ -47,6 +47,7 @@ Plataforma de capacitación en línea para Gemeseg (empresa de seguridad), despl
 | Certificados | Solo PDF descargable en la plataforma, con logos, nombre, cédula, curso y fechas; **no se envían por correo**. Vigencia **12 meses por defecto, configurable por curso** |
 | Correos automáticos | **Descartados** (asignación, recordatorios y certificados). Todo se consulta en la plataforma |
 | Campos de registro | Configurables por el administrador (texto o lista); contraseñas iniciales de cuentas importadas se entregan por CSV descargable y se cambian dentro de la plataforma (2026-10-01) |
+| Sesiones en vivo | Un tipo de lección más (fecha, hora, enlace de cualquier plataforma, instructor responsable, indicaciones). El instructor marca la asistencia (Asistió / Justificada / No asistió) con casillas y marcas masivas; cuenta para completar y certificar; nunca bloquea contenido; horario igual para todos; "Próximas sesiones" en el panel (2026-10-02) |
 | Dominio | Prioridad baja: lo importante es que **funcione**, aunque sea con la URL por defecto de Google/Firebase. El DNS de `gemeseg.com` lo administra el usuario (cPanel); cuando se necesite, se le entregan los registros a crear |
 | Identidad visual | Logos en `public/brand/`. Azul marino `#100F31` y naranja `#EE3B1B` (muestreados del logotipo). Ícono: la "M" naranja |
 

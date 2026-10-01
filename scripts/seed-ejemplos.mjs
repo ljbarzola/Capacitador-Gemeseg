@@ -799,7 +799,8 @@ async function main() {
           let url = l.url ?? null;
           let storagePath = null;
           let fileName = null;
-          const startsAt = l.startsAt ?? null;
+          // Las columnas de fecha son «timestamp» sin zona (UTC): se envían como texto UTC para no depender de la hora del equipo.
+          const startsAt = l.startsAt ? l.startsAt.toISOString().slice(0, 23) : null;
           const instructorId = l.type === "SESSION" ? admin.id : null;
           if (l.asset) {
             const a = assets[l.asset];
@@ -837,7 +838,7 @@ async function main() {
     if (args.has("--inscribir") && c.published) {
       const users = (await q(`select id from "User" where active = true and role = 'STUDENT'`)).rows;
       for (const u of users) {
-        const due = c.due ? new Date(Date.now() + c.due * 86400000) : null;
+        const due = c.due ? new Date(Date.now() + c.due * 86400000).toISOString().slice(0, 23) : null;
         await q(
           `insert into "Enrollment"(id,"userId","courseId","assignedById","dueAt") values($1,$2,$3,$4,$5) on conflict ("userId","courseId") do nothing`,
           [cuid(), u.id, courseId, admin.id, due],

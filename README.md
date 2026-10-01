@@ -2,7 +2,7 @@
 
 Plataforma de capacitación en línea de Gemeseg — `capacitacion.gemeseg.com`.
 
-Cursos → módulos → submódulos → lecciones (video, imagen, enlace, texto, archivo) con exámenes por submódulo, asignación de cursos, seguimiento de avance para RR.HH./instructores con exportación a Excel, certificados en PDF con verificación pública y recertificación, campos de registro configurables, importación de usuarios por CSV y auditoría de acciones.
+Cursos → módulos → submódulos → lecciones (video, imagen, enlace, texto, archivo) con exámenes por submódulo, asignación de cursos, seguimiento de avance para RR.HH./instructores con exportación a Excel, certificados en PDF con verificación pública y recertificación, **sesiones en vivo (Meet, Zoom, Teams) con asistencia**, campos de registro configurables, importación de usuarios por CSV y auditoría de acciones.
 
 ## Desarrollo local
 
@@ -26,7 +26,7 @@ Imagen de producción: `docker build -t capacitador-gemeseg .`
 DATABASE_URL=postgresql://gemeseg:gemeseg@localhost:5433/capacitador node scripts/seed-ejemplos.mjs --inscribir
 ```
 
-Con `--archivos` sube también la imagen y el PDF de ejemplo al bucket (requiere `gcloud`), y con `--inscribir` inscribe a los estudiantes activos (no a administradores ni instructores). Necesita que exista al menos un administrador (`sistemas@gemeseg.com` o cualquier usuario con rol ADMIN).
+Con `--solo=TEXTO` carga o reemplaza únicamente los ejemplos cuyo título contenga ese texto (no toca los demás). Con `--archivos` sube también la imagen y el PDF de ejemplo al bucket (requiere `gcloud`), y con `--inscribir` inscribe a los estudiantes activos (no a administradores ni instructores). Necesita que exista al menos un administrador (`sistemas@gemeseg.com` o cualquier usuario con rol ADMIN).
 
 Para probar el inicio de sesión con Firebase en local hace falta `gcloud auth application-default login` con la cuenta del proyecto y `GOOGLE_CLOUD_QUOTA_PROJECT=capacitaciongemeseg` en `.env`.
 

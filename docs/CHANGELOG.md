@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-01 — Sesión 2 (Fase 1: panel de administración, cursos y exámenes)
+- **Esquema:** migración `content_order_and_filename` (el `order` de módulos/submódulos/lecciones deja de ser único para poder reordenar; `Lesson.fileName`).
+- **Estudiante:** «Mis cursos» con avance y fecha límite; visor de curso con navegación lateral (plegable en móvil); lecciones de texto, video YouTube/Vimeo (iframe `youtube-nocookie`), enlace, imagen y archivo; exámenes calificados en el servidor (las respuestas correctas nunca viajan al navegador), orden aleatorio, nota mínima, intentos máximos y reintentos.
+- **Progresión:** secuencial (cada actividad se desbloquea al completar la anterior, validado en el servidor) o libre, configurable por curso. La inscripción pasa sola a EN CURSO y COMPLETADO (`src/lib/progress.ts`).
+- **Administración (instructor y administrador):** cursos → módulos → submódulos → lecciones con reordenado, examen por submódulo (opción única, múltiple, verdadero/falso), grupos, asignación masiva (todos los estudiantes activos o un grupo) e individual con fecha límite, lista de inscritos con avance y vista previa sin guardar avance.
+- **Solo administrador:** usuarios con búsqueda, cambio de rol, grupo y activación; no puede cambiarse el propio rol ni quedar el sistema sin administradores. Un usuario desactivado pierde el acceso de inmediato.
+- Páginas 404 y de error en español. `src/proxy.ts` protege `/panel`, `/cursos` y `/admin` (comprobación optimista); la real es `src/lib/dal.ts`.
+- **Subida de archivos** (video propio, imagen, documento): implementada con URLs firmadas de Cloud Storage (`src/lib/storage.ts`, tope de tamaño firmado). **Pendiente de habilitar en producción:** API `iamcredentials`, rol `serviceAccountTokenCreator` de la cuenta sobre sí misma y CORS del bucket.
+- Prueba de extremo a extremo con navegador real contra producción (42 comprobaciones: registro, roles, grupos, curso, lecciones, reordenado, examen, secuencial, aprobado/reprobado, asignaciones, desactivación, eliminación); usuarios y datos de prueba borrados al terminar.
+- Pendiente de la Fase 1: nada funcional salvo habilitar la subida de archivos.
+
 ## 2026-10-01 — Sesión 2 (Fase 1: registro e inicio de sesión)
 - Decisión del usuario: **sin verificación de correo** (más de 200 personas poco técnicas). Se quitó el envío del correo y el aviso del panel; la recuperación de contraseña se mantiene.
 - Registro, inicio de sesión, recuperación de contraseña, panel protegido (`/panel`) y cierre de sesión. Firebase Auth en el navegador; el servidor intercambia el ID token por una cookie de sesión `httpOnly` de Firebase (7 días) y la verifica en `src/lib/dal.ts`. `src/proxy.ts` solo hace la comprobación optimista de cookie.

@@ -2,7 +2,7 @@
 
 Plataforma de capacitación en línea de Gemeseg — `capacitacion.gemeseg.com`.
 
-Cursos → módulos → submódulos → lecciones (video, imagen, enlace, texto) con exámenes por submódulo, asignación de cursos, seguimiento de avance para RR.HH./instructores, certificados y recertificación.
+Cursos → módulos → submódulos → lecciones (video, imagen, enlace, texto, archivo) con exámenes por submódulo, asignación de cursos, seguimiento de avance para RR.HH./instructores con exportación a Excel, certificados en PDF con verificación pública y recertificación.
 
 ## Desarrollo local
 
@@ -18,6 +18,18 @@ npm run dev                      # http://localhost:3000  (salud: /api/health)
 
 Imagen de producción: `docker build -t capacitador-gemeseg .`
 
+### Cursos de ejemplo
+
+`scripts/seed-ejemplos.mjs` carga seis cursos de ejemplo (secuencial y libre, todos los tipos de lección y de pregunta, con y sin examen, borrador). Se puede repetir: reemplaza los cursos cuyo título termina en «(Ejemplo)» o «(Borrador de ejemplo)».
+
+```bash
+DATABASE_URL=postgresql://gemeseg:gemeseg@localhost:5433/capacitador node scripts/seed-ejemplos.mjs --inscribir
+```
+
+Con `--archivos` sube también la imagen y el PDF de ejemplo al bucket (requiere `gcloud`), y con `--inscribir` inscribe a todas las cuentas activas. Necesita que exista al menos un administrador (`sistemas@gemeseg.com` o cualquier usuario con rol ADMIN).
+
+Para probar el inicio de sesión con Firebase en local hace falta `gcloud auth application-default login` con la cuenta del proyecto y `GOOGLE_CLOUD_QUOTA_PROJECT=capacitaciongemeseg` en `.env`.
+
 ## Documentación
 
 - [Requisitos y bitácora de respuestas](docs/00-requisitos.md)
@@ -26,4 +38,4 @@ Imagen de producción: `docker build -t capacitador-gemeseg .`
 - [Roadmap](docs/05-roadmap.md)
 - [Changelog](docs/CHANGELOG.md)
 
-> Estado: Fase 0 (fundaciones). Aún no hay pantallas de producto; ver roadmap.
+> Estado: Fases 0, 1 y 2 completas y en producción. Siguiente: Fase 3 (auditoría, campos de registro configurables, importación CSV); ver roadmap.

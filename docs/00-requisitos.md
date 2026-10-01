@@ -43,6 +43,9 @@ Plataforma de capacitación en línea para Gemeseg (empresa de seguridad), despl
 | Infraestructura GCP | **Proyecto nuevo**: `capacitaciongemeseg` (número 636310739015), cuenta `sistemas@gemeseg.com`. Guía en [02-gcp-setup.md](02-gcp-setup.md); avance en [CHANGELOG](CHANGELOG.md) |
 | Verificación de correo | **Descartada** (2026-10-01): los usuarios son muchos y poco técnicos; el registro entra directo. Se mantiene recuperar contraseña |
 | Validación de la cédula | **Pospuesta** (2026-10-01): el campo es obligatorio y único, pero no se valida el dígito verificador por ahora. Se activa con `VALIDATE_CEDULA` en `src/lib/validation/auth.ts` |
+| Cédula | **Exactamente 10 números**, nada más (2026-10-01). Sin validar dígito verificador ni aceptar pasaporte |
+| Certificados | Solo PDF descargable en la plataforma, con logos, nombre, cédula, curso y fechas; **no se envían por correo**. Vigencia **12 meses por defecto, configurable por curso** |
+| Correos automáticos | **Descartados** (asignación, recordatorios y certificados). Todo se consulta en la plataforma |
 | Dominio | Prioridad baja: lo importante es que **funcione**, aunque sea con la URL por defecto de Google/Firebase. El DNS de `gemeseg.com` lo administra el usuario (cPanel); cuando se necesite, se le entregan los registros a crear |
 | Identidad visual | Logos en `public/brand/`. Azul marino `#100F31` y naranja `#EE3B1B` (muestreados del logotipo). Ícono: la "M" naranja |
 
@@ -57,10 +60,10 @@ Plataforma de capacitación en línea para Gemeseg (empresa de seguridad), despl
 - [x] ~~Confirmar stack recomendado~~ — confirmado en sesión 2.
 - [x] ~~Proyecto GCP/Firebase y DNS~~ — proyecto nuevo; el usuario administra el DNS (sesión 2).
 - [x] ~~DNI obligatorio~~ — cédula ecuatoriana, obligatoria y en el certificado (sesión 2).
-- [ ] ¿Se debe aceptar también pasaporte para extranjeros? Por ahora solo se valida cédula ecuatoriana.
+- [x] ~~Pasaporte para extranjeros~~ — no: la cédula son 10 números.
 - [ ] Tamaño máximo de video subido y volumen esperado de multimedia (afecta costos de Storage).
 - [ ] Tipografía (logos y colores ya recibidos).
-- [ ] Vigencia típica de recertificación (¿12 meses?) y plantilla del certificado.
-- [ ] Proveedor de correo y remitente (p. ej. `capacitacion@gemeseg.com`).
+- [x] ~~Vigencia de recertificación y plantilla~~ — 12 meses configurable; PDF con logos generado por la plataforma.
+- [x] ~~Proveedor de correo~~ — no se enviarán correos.
 - [ ] Política de privacidad / retención de datos personales.
 - [ ] ¿Quién crea los primeros Administradores/Instructores? (propuesta: se siembran manualmente; luego el admin promueve usuarios).

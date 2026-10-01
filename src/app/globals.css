@@ -61,3 +61,36 @@ h3 {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* Un solo momento de movimiento: al abrir una pantalla, las tarjetas aparecen en cascada y las
+   barras de avance se llenan. El resto de la interfaz solo reacciona a lo que hace la persona. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.enter {
+  animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+.grow {
+  transform-origin: left;
+  animation: grow 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 40ms + 200ms);
+}

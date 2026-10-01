@@ -97,6 +97,63 @@ export const IconShield = (p: SVGProps<SVGSVGElement>) => (
   </Svg>
 );
 
+export const IconBook = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <path d="M4 4.5A1.5 1.5 0 015.5 3H16v12H5.5A1.5 1.5 0 004 16.5v-12z" />
+    <path d="M4 16.5A1.5 1.5 0 005.5 18H16M8 7h4" />
+  </Svg>
+);
+export const IconUsers = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <circle cx="8" cy="7" r="2.6" />
+    <path d="M3 16c.4-2.6 2.4-4 5-4s4.6 1.4 5 4" />
+    <circle cx="14.5" cy="7.5" r="2" />
+    <path d="M14.5 12c1.6.1 2.8 1.1 3 3" />
+  </Svg>
+);
+export const IconChart = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <path d="M4 16V9M10 16V4M16 16v-5" />
+  </Svg>
+);
+export const IconAward = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <circle cx="10" cy="8" r="4.5" />
+    <path d="M7.5 12l-1 5 3.5-2 3.5 2-1-5M8 8l1.4 1.4L12 6.8" />
+  </Svg>
+);
+export const IconClock = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <circle cx="10" cy="10" r="7" />
+    <path d="M10 6v4.2l2.8 1.6" />
+  </Svg>
+);
+export const IconPlus = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <path d="M10 4v12M4 10h12" />
+  </Svg>
+);
+export const IconUpload = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <path d="M10 13V4M6.5 7.5L10 4l3.5 3.5M4 16h12" />
+  </Svg>
+);
+export const IconList = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <path d="M7 5.5h9M7 10h9M7 14.5h9M4 5.5h.01M4 10h.01M4 14.5h.01" />
+  </Svg>
+);
+export const IconSliders = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <path d="M4 6h8M15 6h1M4 14h1M8 14h8M12 4v4M7 12v4" />
+  </Svg>
+);
+export const IconFlag = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <path d="M5 17V4m0 1h9l-1.6 3L14 11H5" />
+  </Svg>
+);
+
 // Icono según el tipo de lección.
 export function LessonIcon({ type, ...props }: { type?: string } & SVGProps<SVGSVGElement>) {
   switch (type) {

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { IconAward, IconCheck, IconChart, IconUsers } from "@/components/icons";
 import { CertBadge, EnrollmentBadge } from "@/components/status";
 import {
+  ACCENTS,
   Button,
   Card,
   Empty,
@@ -79,10 +81,12 @@ export default async function CourseProgressPage({
       />
 
       <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Inscritos" value={s.enrolled} note={`${s.notStarted} sin iniciar · ${s.inProgress} en curso`} />
-        <Stat label="Completaron" value={s.completed} note={`${s.enrolled ? Math.round((s.completed / s.enrolled) * 100) : 0}% de los inscritos`} />
-        <Stat label="Avance promedio" value={`${s.avgPercent}%`} note={s.overdue ? `${s.overdue} con fecha límite vencida` : "Sin atrasos"} />
+        <Stat accent={ACCENTS[2]} icon={<IconUsers />} label="Inscritos" value={s.enrolled} note={`${s.notStarted} sin iniciar · ${s.inProgress} en curso`} />
+        <Stat accent={ACCENTS[4]} icon={<IconCheck />} label="Completaron" value={s.completed} note={`${s.enrolled ? Math.round((s.completed / s.enrolled) * 100) : 0}% de los inscritos`} />
+        <Stat accent={ACCENTS[1]} icon={<IconChart />} label="Avance promedio" value={`${s.avgPercent}%`} note={s.overdue ? `${s.overdue} con fecha límite vencida` : "Sin atrasos"} />
         <Stat
+          accent={ACCENTS[3]}
+          icon={<IconAward />}
           label="Aprobación de exámenes"
           value={s.passRate === null ? "—" : `${s.passRate}%`}
           note={`Certificados: ${s.certValid + s.certExpiring} vigentes · ${s.certExpired} vencidos`}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Button, Card, Empty, LinkButton, PageHeader, ProgressBar, Select, Stat, TableWrap, Td, Th } from "@/components/ui";
+import { IconAward, IconCheck, IconChart, IconUsers } from "@/components/icons";
+import { ACCENTS, Button, Card, Empty, LinkButton, PageHeader, ProgressBar, Select, Stat, TableWrap, Td, Th } from "@/components/ui";
 import { CertBadge } from "@/components/status";
 import { requireStaff } from "@/lib/dal";
 import { formatDate } from "@/lib/format";
@@ -65,14 +66,37 @@ export default async function ProgressPage({
       />
 
       <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Personas con cursos" value={people} note={`${enrolled} inscripciones en total`} />
         <Stat
+          className="enter"
+          accent={ACCENTS[2]}
+          icon={<IconUsers />}
+          label="Personas con cursos"
+          value={people}
+          note={`${enrolled} inscripciones en total`}
+        />
+        <Stat
+          className="enter"
+          style={{ "--i": 1 } as React.CSSProperties}
+          accent={ACCENTS[4]}
+          icon={<IconCheck />}
           label="Cursos completados"
           value={`${enrolled ? Math.round((completed / enrolled) * 100) : 0}%`}
           note={`${completed} de ${enrolled} inscripciones`}
         />
-        <Stat label="Avance promedio" value={`${avgPercent}%`} note="de las actividades asignadas" />
         <Stat
+          className="enter"
+          style={{ "--i": 2 } as React.CSSProperties}
+          accent={ACCENTS[1]}
+          icon={<IconChart />}
+          label="Avance promedio"
+          value={`${avgPercent}%`}
+          note="de las actividades asignadas"
+        />
+        <Stat
+          className="enter"
+          style={{ "--i": 3 } as React.CSSProperties}
+          accent={ACCENTS[3]}
+          icon={<IconAward />}
           label="Certificados vigentes"
           value={sum((r) => r.summary.certValid + r.summary.certExpiring)}
           note={`${sum((r) => r.summary.certExpiring)} por vencer · ${sum((r) => r.summary.certExpired)} vencidos`}

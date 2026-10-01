@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-02 — Ajustes tras la prueba del usuario
+- **Administración sin cursos pendientes:** se quitaron 4 inscripciones pendientes de `sistemas@gemeseg.com` (las había creado el script de ejemplos al inscribir a todas las cuentas) y el script ahora solo inscribe estudiantes. Registro completo y forma de revertir en [docs/cambios/2026-10-02-admin-sin-cursos-pendientes.md](cambios/2026-10-02-admin-sin-cursos-pendientes.md).
+- **Botón «Enviar comentarios»:** guardaba bien, pero la confirmación aparecía arriba de la página, lejos del botón, y parecía no hacer nada. Ahora el formulario muestra «Enviando…», confirma junto al botón («Comentarios enviados. ¡Gracias por ayudarnos a mejorar!»), cuenta los caracteres y cambia a «Actualizar comentarios» (`feedback-form.tsx`).
+- **Comentario de prueba «bien» reemplazado** por un comentario de ejemplo (el original queda en el documento de cambios).
+- **Interfaz con más color y movimiento sobrio:** cada curso tiene un color de identidad estable (se ve igual en «Mis cursos», en la página del curso y en la lista de administración); portada de «Mis cursos» con degradado azul marino, indicadores (por iniciar, en curso, completados, por renovar) y tarjetas que se elevan al pasar el cursor; resumen de administración con indicadores en color y accesos rápidos; indicadores de avance con icono. Un solo momento de movimiento al abrir una pantalla (las tarjetas aparecen en cascada y las barras de avance se llenan); se respeta «reducir movimiento».
+- Panel de una cuenta de gestión sin cursos: explica que no recibe cursos y ofrece ir a los cursos o al avance.
+- Auditoría: nueva etiqueta «Comentario reemplazado».
+
 ## 2026-10-01 — Sesión 2 (Fase 3: auditoría, campos de registro, importación, perfil)
 - **Auditoría** (`/admin/auditoria`, solo administrador): registra quién hizo qué y cuándo (usuarios, grupos, campos de registro, cursos, módulos, lecciones, exámenes, preguntas, asignaciones, certificados emitidos y recertificaciones, importaciones, cambios de contraseña). Filtros por texto, tipo de acción y fechas, con paginación. Nunca guarda contraseñas. Es de mejor esfuerzo: si falla el registro, la acción original no se interrumpe (`src/lib/audit.ts`).
 - **Campos de registro configurables** (`/admin/campos`, solo administrador): campos de texto o de lista de opciones, obligatorios u opcionales, con orden y opción de ocultar. Aparecen en el registro, en «Mi perfil», en la ficha de la persona y como columnas del Excel de avance. Las respuestas se guardan en `User.extraFields` con una clave estable; al eliminar un campo las respuestas guardadas se conservan.

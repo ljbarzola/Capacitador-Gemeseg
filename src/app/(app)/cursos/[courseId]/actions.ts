@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
 import { certState, startRecertification } from "@/lib/certificates";
@@ -93,17 +94,23 @@ export async function submitQuiz(formData: FormData) {
 }
 
 // Comentarios finales del curso (texto libre, uno por persona; se pueden editar).
-export async function submitFeedback(formData: FormData) {
+export type FeedbackState = { status: "idle" | "ok" | "error"; message: string };
+
+export async function submitFeedback(_previous: FeedbackState, formData: FormData): Promise<FeedbackState> {
   const courseId = field(formData, "courseId");
   const comment = field(formData, "comment").trim().slice(0, 3000);
   const { user, enrollment } = await getCourseAccess(courseId);
-  if (!enrollment || enrollment.status !== "COMPLETED" || !comment) redirect(`/cursos/${courseId}`);
+  if (!enrollment || enrollment.status !== "COMPLETED") {
+    return { status: "error", message: "Solo puede comentar un curso que ya completó." };
+  }
+  if (!comment) return { status: "error", message: "Escriba su comentario antes de enviarlo." };
   await getPrisma().courseFeedback.upsert({
     where: { userId_courseId: { userId: user.id, courseId } },
     create: { userId: user.id, courseId, comment },
     update: { comment },
   });
-  redirect(`/cursos/${courseId}?ok=comentario`);
+  revalidatePath(`/cursos/${courseId}`);
+  return { status: "ok", message: "Comentarios enviados. ¡Gracias por ayudarnos a mejorar!" };
 }
 
 // Inicia un nuevo ciclo de certificación cuando el certificado está por vencer o ya venció.

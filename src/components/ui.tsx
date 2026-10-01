@@ -2,6 +2,25 @@ import { flashText } from "@/lib/flash";
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
+// Identidad de color: el naranja de marca es la acción; cada curso y cada indicador usa un acento
+// secundario sobrio (siempre los mismos, para que la persona reconozca "su" curso a simple vista).
+export const ACCENTS = [
+  { name: "naranja", bar: "bg-[#e8431f]", soft: "bg-[#fdeae6]", text: "text-[#a8290f]", border: "border-[#f3c2b6]", edge: "border-t-[#e8431f]" },
+  { name: "turquesa", bar: "bg-teal-600", soft: "bg-teal-50", text: "text-teal-800", border: "border-teal-200", edge: "border-t-teal-600" },
+  { name: "indigo", bar: "bg-indigo-600", soft: "bg-indigo-50", text: "text-indigo-800", border: "border-indigo-200", edge: "border-t-indigo-600" },
+  { name: "ambar", bar: "bg-amber-600", soft: "bg-amber-50", text: "text-amber-800", border: "border-amber-200", edge: "border-t-amber-600" },
+  { name: "esmeralda", bar: "bg-emerald-600", soft: "bg-emerald-50", text: "text-emerald-800", border: "border-emerald-200", edge: "border-t-emerald-600" },
+] as const;
+
+export type Accent = (typeof ACCENTS)[number];
+
+// Acento estable para un texto (p. ej. el id de un curso).
+export function accentFor(key: string): Accent {
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  return ACCENTS[hash % ACCENTS.length];
+}
+
 // Piezas visuales comunes de la zona autenticada: paneles planos con borde fino, esquinas
 // sobrias y un solo color de acción (naranja).
 
@@ -28,12 +47,41 @@ export function PageHeader({
 export function Card({
   children,
   className = "",
+  interactive = false,
+  accent,
+  style,
 }: {
   children: ReactNode;
   className?: string;
+  interactive?: boolean;
+  accent?: Accent;
+  style?: React.CSSProperties;
 }) {
   return (
-    <section className={`rounded-lg border border-zinc-200 bg-white p-5 ${className}`}>{children}</section>
+    <section
+      style={style}
+      className={`rounded-lg border border-zinc-200 bg-white p-5 ${accent ? `border-t-[3px] ${accent.edge}` : ""} ${
+        interactive
+          ? "transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-[0_8px_24px_-12px_rgba(16,15,49,0.25)]"
+          : ""
+      } ${className}`}
+    >
+      {children}
+    </section>
+  );
+}
+
+// Cuadro de color con un icono, para identificar secciones e indicadores.
+export function IconChip({ children, accent, size = "md" }: { children: ReactNode; accent: Accent; size?: "md" | "lg" }) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-flex shrink-0 items-center justify-center rounded-lg ${accent.soft} ${accent.text} ${
+        size === "lg" ? "size-11 [&>svg]:size-6" : "size-9 [&>svg]:size-[18px]"
+      }`}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -48,7 +96,7 @@ const button = {
 type Variant = keyof typeof button;
 
 const base =
-  "inline-flex min-h-9 items-center justify-center gap-2 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-55";
+  "inline-flex min-h-9 items-center justify-center gap-2 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-[colors,transform] duration-150 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55";
 
 export function Button({
   variant = "primary",
@@ -102,7 +150,7 @@ export function Field({
 }
 
 // Barra continua (porcentaje).
-export function ProgressBar({ percent }: { percent: number }) {
+export function ProgressBar({ percent, fill = "bg-brand" }: { percent: number; fill?: string }) {
   return (
     <div
       role="progressbar"
@@ -111,7 +159,7 @@ export function ProgressBar({ percent }: { percent: number }) {
       aria-valuemax={100}
       className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-200"
     >
-      <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${percent}%` }} />
+      <div className={`h-full rounded-full ${fill} transition-all duration-700`} style={{ width: `${percent}%` }} />
     </div>
   );
 }
@@ -121,16 +169,19 @@ export function SegmentProgress({
   completed,
   total,
   className = "",
+  accent,
 }: {
   completed: number;
   total: number;
   className?: string;
+  accent?: Accent;
 }) {
+  const fill = accent?.bar ?? "bg-brand";
   const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
   if (total === 0 || total > 36) {
     return (
       <div className={className}>
-        <ProgressBar percent={percent} />
+        <ProgressBar percent={percent} fill={fill} />
       </div>
     );
   }
@@ -144,7 +195,9 @@ export function SegmentProgress({
       className={`flex gap-[3px] ${className}`}
     >
       {Array.from({ length: total }, (_, i) => (
-        <span key={i} className={`h-1.5 flex-1 rounded-[2px] ${i < completed ? "bg-brand" : "bg-zinc-200"}`} />
+        <span key={i} className="relative h-1.5 flex-1 overflow-hidden rounded-[2px] bg-zinc-200">
+          {i < completed && <span className={`grow absolute inset-0 ${fill}`} style={{ "--i": i } as React.CSSProperties} />}
+        </span>
       ))}
     </div>
   );
@@ -156,6 +209,8 @@ const badgeTone = {
   amber: "bg-[#fbefd6] text-[#7d4b00]",
   blue: "bg-[#e5ecf9] text-[#1c4797]",
   red: "bg-[#fbe6e3] text-[#9a2118]",
+  teal: "bg-teal-50 text-teal-800",
+  indigo: "bg-indigo-50 text-indigo-800",
 } as const;
 
 export function Badge({
@@ -180,15 +235,37 @@ export function Empty({ children }: { children: ReactNode }) {
   );
 }
 
-// Cifra destacada con su rótulo, para los paneles de resumen.
-export function Stat({ label, value, note }: { label: string; value: ReactNode; note?: ReactNode }) {
+// Indicador de los paneles de resumen: cifra grande, rótulo, icono en color y una pista de contexto.
+export function Stat({
+  label,
+  value,
+  note,
+  accent,
+  icon,
+  className = "",
+  style,
+}: {
+  label: string;
+  value: ReactNode;
+  note?: ReactNode;
+  accent?: Accent;
+  icon?: ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white px-5 py-4">
-      <p className="text-sm text-zinc-600">{label}</p>
-      <p className="mt-1 text-3xl font-semibold leading-none text-navy" style={{ fontStretch: "88%" }}>
-        {value}
-      </p>
-      {note && <p className="mt-2 text-xs text-zinc-500">{note}</p>}
+    <div
+      style={style}
+      className={`flex items-start gap-3.5 rounded-lg border border-zinc-200 bg-white px-5 py-4 ${accent ? `border-t-[3px] ${accent.edge}` : ""} ${className}`}
+    >
+      {icon && accent && <IconChip accent={accent}>{icon}</IconChip>}
+      <div className="min-w-0">
+        <p className="text-sm text-zinc-600">{label}</p>
+        <p className="mt-1 text-3xl font-semibold leading-none text-navy" style={{ fontStretch: "88%" }}>
+          {value}
+        </p>
+        {note && <p className="mt-2 text-xs text-zinc-500">{note}</p>}
+      </div>
     </div>
   );
 }

@@ -4,7 +4,7 @@
 //   DATABASE_URL=postgresql://... node scripts/seed-ejemplos.mjs [--archivos] [--inscribir]
 //
 //   --archivos   sube la imagen y el PDF de ejemplo al bucket (requiere gcloud con sesión iniciada)
-//   --inscribir  inscribe a todas las cuentas existentes en los cursos publicados
+//   --inscribir  inscribe a los estudiantes activos en los cursos publicados (no a administradores ni instructores)
 //
 // El contenido es referencial: debe revisarlo el área responsable antes de usarlo con personal real.
 import { execFileSync } from "node:child_process";
@@ -735,7 +735,7 @@ async function main() {
     }
 
     if (args.has("--inscribir") && c.published) {
-      const users = (await q(`select id from "User" where active = true`)).rows;
+      const users = (await q(`select id from "User" where active = true and role = 'STUDENT'`)).rows;
       for (const u of users) {
         const due = c.due ? new Date(Date.now() + c.due * 86400000) : null;
         await q(

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Badge, Button, Card, Empty, Flash, Input, LinkButton, PageHeader } from "@/components/ui";
+import { IconBook } from "@/components/icons";
+import { Badge, Button, Card, Empty, Flash, IconChip, Input, LinkButton, PageHeader, accentFor } from "@/components/ui";
 import { requireStaff } from "@/lib/dal";
 import { getPrisma } from "@/lib/prisma";
 import { createCourse } from "./actions";
@@ -44,8 +45,12 @@ export default async function CoursesPage({
         <ul className="flex flex-col gap-3">
           {courses.map((course) => (
             <li key={course.id}>
-              <Card className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0">
+              <Card interactive accent={accentFor(course.id)} className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 items-start gap-3">
+                  <IconChip accent={accentFor(course.id)}>
+                    <IconBook />
+                  </IconChip>
+                  <div className="min-w-0">
                   <p className="font-semibold text-navy">{course.title}</p>
                   <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-600">
                     {course.published ? <Badge tone="green">Publicado</Badge> : <Badge tone="amber">Borrador</Badge>}
@@ -55,6 +60,7 @@ export default async function CoursesPage({
                     <span>·</span>
                     <span>{course.progression === "SEQUENTIAL" ? "Secuencial" : "Libre"}</span>
                   </p>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <LinkButton href={`/admin/cursos/${course.id}`} variant="secondary">

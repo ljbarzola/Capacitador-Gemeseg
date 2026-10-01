@@ -6,7 +6,8 @@ import type { ComponentProps, ReactNode } from "react";
 
 export function BrandPanel({ compact = false }: { compact?: boolean }) {
   return (
-    <aside className="flex flex-col justify-between bg-navy px-6 py-5 text-white lg:min-h-screen lg:w-[42%] lg:px-14 lg:py-14">
+    <aside className="relative flex flex-col justify-between overflow-hidden bg-gradient-to-br from-navy via-[#17154a] to-[#26226b] px-6 py-5 text-white lg:min-h-screen lg:w-[42%] lg:px-14 lg:py-14">
+      <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-16 size-80 rounded-full bg-[#ee3b1b]/20 blur-3xl" />
       <Link href="/" aria-label="Inicio" className="inline-block self-start">
         <Image
           src="/brand/logo-gemeseg-bgblue.png"

@@ -26,7 +26,7 @@ Imagen de producción: `docker build -t capacitador-gemeseg .`
 DATABASE_URL=postgresql://gemeseg:gemeseg@localhost:5433/capacitador node scripts/seed-ejemplos.mjs --inscribir
 ```
 
-Con `--archivos` sube también la imagen y el PDF de ejemplo al bucket (requiere `gcloud`), y con `--inscribir` inscribe a todas las cuentas activas. Necesita que exista al menos un administrador (`sistemas@gemeseg.com` o cualquier usuario con rol ADMIN).
+Con `--archivos` sube también la imagen y el PDF de ejemplo al bucket (requiere `gcloud`), y con `--inscribir` inscribe a los estudiantes activos (no a administradores ni instructores). Necesita que exista al menos un administrador (`sistemas@gemeseg.com` o cualquier usuario con rol ADMIN).
 
 Para probar el inicio de sesión con Firebase en local hace falta `gcloud auth application-default login` con la cuenta del proyecto y `GOOGLE_CLOUD_QUOTA_PROJECT=capacitaciongemeseg` en `.env`.
 

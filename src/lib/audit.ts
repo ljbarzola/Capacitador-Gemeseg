@@ -32,6 +32,7 @@ export const AUDIT_ACTIONS = {
   "inscripcion.quitar": "Inscripción eliminada",
   "certificado.emitir": "Certificado emitido",
   "certificado.renovar": "Recertificación iniciada",
+  "comentario.reemplazar": "Comentario reemplazado",
 } as const;
 
 export type AuditAction = keyof typeof AUDIT_ACTIONS;

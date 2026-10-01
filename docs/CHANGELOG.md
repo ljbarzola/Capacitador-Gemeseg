@@ -1,7 +1,8 @@
 # Changelog
 
 ## 2026-10-01 — Sesión 2 (Fase 1: registro e inicio de sesión)
-- Registro, inicio de sesión, recuperación de contraseña, aviso de correo sin verificar, panel protegido (`/panel`) y cierre de sesión. Firebase Auth en el navegador; el servidor intercambia el ID token por una cookie de sesión `httpOnly` de Firebase (7 días) y la verifica en `src/lib/dal.ts`. `src/proxy.ts` solo hace la comprobación optimista de cookie.
+- Decisión del usuario: **sin verificación de correo** (más de 200 personas poco técnicas). Se quitó el envío del correo y el aviso del panel; la recuperación de contraseña se mantiene.
+- Registro, inicio de sesión, recuperación de contraseña, panel protegido (`/panel`) y cierre de sesión. Firebase Auth en el navegador; el servidor intercambia el ID token por una cookie de sesión `httpOnly` de Firebase (7 días) y la verifica en `src/lib/dal.ts`. `src/proxy.ts` solo hace la comprobación optimista de cookie.
 - `POST /api/auth/register` crea la cuenta con Firebase Admin y el usuario en la base (rol `STUDENT`); si falla la base, borra la cuenta de Firebase para no dejarla huérfana.
 - Decisión del usuario: **la validación del dígito verificador de la cédula queda desactivada por ahora** (`VALIDATE_CEDULA = false` en `src/lib/validation/auth.ts`). El campo sigue siendo obligatorio, único y sale en el certificado; se acepta cualquier documento de 5 a 20 letras o números. El validador módulo 10 de `src/lib/cedula.ts` se conserva para activarlo después.
 - La config pública de Firebase (`NEXT_PUBLIC_*`) se incrusta al compilar: se pasa como `--build-arg` desde sustituciones del activador `deploy-main` (no están en el repositorio).

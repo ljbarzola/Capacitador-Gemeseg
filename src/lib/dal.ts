@@ -14,11 +14,9 @@ export const getSessionUser = cache(async () => {
   if (!cookie) return null;
 
   let uid: string;
-  let emailVerified: boolean;
   try {
     const decoded = await getAdminAuth().verifySessionCookie(cookie);
     uid = decoded.uid;
-    emailVerified = decoded.email_verified ?? false;
   } catch {
     return null;
   }
@@ -36,7 +34,7 @@ export const getSessionUser = cache(async () => {
     },
   });
   if (!user || !user.active) return null;
-  return { ...user, emailVerified };
+  return user;
 });
 
 export async function requireUser() {

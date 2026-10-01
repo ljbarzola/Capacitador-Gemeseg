@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import * as z from "zod";
-import { sendEmailVerification, signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { Field, FormMessage, SubmitButton } from "@/components/auth-ui";
 import { authErrorMessage, getClientAuth } from "@/lib/firebase/client";
 import { registerSchema, type FieldErrors } from "@/lib/validation/auth";
@@ -68,7 +68,6 @@ export function RegistroForm() {
         router.push("/login");
         return;
       }
-      await sendEmailVerification(credential.user).catch(() => {});
       router.push("/panel");
       router.refresh();
     } catch (e) {

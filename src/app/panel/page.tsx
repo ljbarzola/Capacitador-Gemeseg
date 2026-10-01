@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { requireUser } from "@/lib/dal";
 import { LogoutButton } from "./logout-button";
-import { VerifyEmailBanner } from "./verify-email-banner";
 
 export const metadata: Metadata = { title: "Mi panel · Capacitación Gemeseg" };
 
@@ -33,7 +32,6 @@ export default async function PanelPage() {
         </div>
       </header>
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
-        {!user.emailVerified && <VerifyEmailBanner />}
         <div>
           <h1 className="text-2xl font-semibold text-navy">
             Hola, {user.firstNames.split(" ")[0]}

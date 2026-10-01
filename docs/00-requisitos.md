@@ -41,6 +41,7 @@ Plataforma de capacitación en línea para Gemeseg (empresa de seguridad), despl
 | Documento de identidad | **Cédula ecuatoriana** (el servicio opera en Ecuador). Obligatoria, única por usuario, validada (10 dígitos, módulo 10) y aparece en el certificado. Campo `cedula` en BD; validador en `src/lib/cedula.ts` |
 | Repositorio remoto | `https://github.com/ljbarzola/Capacitador-Gemeseg` (push autorizado) |
 | Infraestructura GCP | **Proyecto nuevo**: `capacitaciongemeseg` (número 636310739015), cuenta `sistemas@gemeseg.com`. Guía en [02-gcp-setup.md](02-gcp-setup.md); avance en [CHANGELOG](CHANGELOG.md) |
+| Verificación de correo | **Descartada** (2026-10-01): los usuarios son muchos y poco técnicos; el registro entra directo. Se mantiene recuperar contraseña |
 | Validación de la cédula | **Pospuesta** (2026-10-01): el campo es obligatorio y único, pero no se valida el dígito verificador por ahora. Se activa con `VALIDATE_CEDULA` en `src/lib/validation/auth.ts` |
 | Dominio | Prioridad baja: lo importante es que **funcione**, aunque sea con la URL por defecto de Google/Firebase. El DNS de `gemeseg.com` lo administra el usuario (cPanel); cuando se necesite, se le entregan los registros a crear |
 | Identidad visual | Logos en `public/brand/`. Azul marino `#100F31` y naranja `#EE3B1B` (muestreados del logotipo). Ícono: la "M" naranja |

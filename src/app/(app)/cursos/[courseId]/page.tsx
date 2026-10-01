@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { CertBadge } from "@/components/status";
 import { IconAward, IconBook, IconClock, IconDownload, IconList } from "@/components/icons";
 import { Button, Card, IconChip, LinkButton, SegmentProgress, accentFor } from "@/components/ui";
+import { getCourseAccents } from "@/lib/accents";
 import { certState } from "@/lib/certificates";
 import { itemHref } from "@/lib/course-links";
 import { getCourseAccess } from "@/lib/dal";
@@ -39,7 +40,7 @@ export default async function CoursePage({ params }: { params: Promise<{ courseI
       : null,
   ]);
 
-  const accent = accentFor(courseId);
+  const accent = (await getCourseAccents()).get(courseId) ?? accentFor(courseId);
   const firstOpen = outline.items.find((i) => i.accessible);
   const target = preview ? firstOpen : (outline.next ?? firstOpen);
   const lessons = outline.items.filter((i) => i.kind === "lesson").length;

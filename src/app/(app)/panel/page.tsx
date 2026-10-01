@@ -3,6 +3,7 @@ import Link from "next/link";
 import { IconAward, IconBook, IconCheck, IconClock, IconFlag } from "@/components/icons";
 import { CertBadge } from "@/components/status";
 import { Card, IconChip, LinkButton, SegmentProgress, accentFor } from "@/components/ui";
+import { getCourseAccents } from "@/lib/accents";
 import { certState } from "@/lib/certificates";
 import { isStaff, requireUser } from "@/lib/dal";
 import { formatDate } from "@/lib/format";
@@ -26,6 +27,7 @@ export default async function PanelPage() {
     },
   });
   const outlines = await Promise.all(enrollments.map((e) => getOutline(e.course.id, user.id)));
+  const accents = await getCourseAccents();
   const now = new Date();
 
   const cards = enrollments
@@ -116,7 +118,7 @@ export default async function PanelPage() {
       ) : (
         <ul className="grid gap-4 md:grid-cols-2">
           {cards.map(({ enrollment, outline, cert, state, overdue, needsRenewal }, index) => {
-            const accent = accentFor(enrollment.course.id);
+            const accent = accents.get(enrollment.course.id) ?? accentFor(enrollment.course.id);
             return (
               <li key={enrollment.id} className="enter" style={{ "--i": index + 1 } as React.CSSProperties}>
                 <Card interactive accent={accent} className="flex h-full flex-col gap-4">

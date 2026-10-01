@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IconBook } from "@/components/icons";
 import { Badge, Button, Card, Empty, Flash, IconChip, Input, LinkButton, PageHeader, accentFor } from "@/components/ui";
+import { getCourseAccents } from "@/lib/accents";
 import { requireStaff } from "@/lib/dal";
 import { getPrisma } from "@/lib/prisma";
 import { createCourse } from "./actions";
@@ -25,6 +26,8 @@ export default async function CoursesPage({
     },
   });
 
+  const accents = await getCourseAccents();
+
   return (
     <>
       <PageHeader title="Cursos" subtitle="Cree y organice los cursos de capacitación." />
@@ -45,9 +48,9 @@ export default async function CoursesPage({
         <ul className="flex flex-col gap-3">
           {courses.map((course) => (
             <li key={course.id}>
-              <Card interactive accent={accentFor(course.id)} className="flex flex-wrap items-center justify-between gap-3">
+              <Card interactive accent={accents.get(course.id) ?? accentFor(course.id)} className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex min-w-0 items-start gap-3">
-                  <IconChip accent={accentFor(course.id)}>
+                  <IconChip accent={accents.get(course.id) ?? accentFor(course.id)}>
                     <IconBook />
                   </IconChip>
                   <div className="min-w-0">

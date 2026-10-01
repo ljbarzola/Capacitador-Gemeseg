@@ -2,7 +2,8 @@ import { flashText } from "@/lib/flash";
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
-// Piezas visuales comunes de la zona autenticada.
+// Piezas visuales comunes de la zona autenticada: paneles planos con borde fino, esquinas
+// sobrias y un solo color de acción (naranja).
 
 export function PageHeader({
   title,
@@ -14,10 +15,10 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 className="text-2xl font-semibold text-navy">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-zinc-600">{subtitle}</p>}
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+      <div className="min-w-0">
+        <h1 className="text-[1.7rem] leading-tight text-navy sm:text-3xl">{title}</h1>
+        {subtitle && <p className="mt-1.5 max-w-prose text-[0.95rem] text-zinc-600">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -32,23 +33,22 @@ export function Card({
   className?: string;
 }) {
   return (
-    <section className={`rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm ${className}`}>
-      {children}
-    </section>
+    <section className={`rounded-lg border border-zinc-200 bg-white p-5 ${className}`}>{children}</section>
   );
 }
 
 const button = {
-  primary: "bg-brand text-white hover:brightness-95",
-  secondary: "border border-zinc-300 bg-white text-navy hover:bg-zinc-50",
-  danger: "border border-red-300 bg-white text-red-700 hover:bg-red-50",
+  primary: "bg-brand text-white hover:bg-[#d6341a] active:bg-[#bd2d16]",
+  secondary: "border border-zinc-300 bg-white text-navy hover:border-zinc-400 hover:bg-zinc-50",
+  danger: "border border-red-200 bg-white text-red-700 hover:border-red-300 hover:bg-red-50",
   ghost: "text-navy hover:bg-zinc-100",
+  dark: "bg-navy text-white hover:bg-[#1d1b4b]",
 } as const;
 
 type Variant = keyof typeof button;
 
 const base =
-  "inline-flex items-center justify-center rounded-lg px-3.5 py-2 text-sm font-semibold transition disabled:opacity-60";
+  "inline-flex min-h-9 items-center justify-center gap-2 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-55";
 
 export function Button({
   variant = "primary",
@@ -66,31 +66,19 @@ export function LinkButton({
   return <Link className={`${base} ${button[variant]} ${className}`} {...props} />;
 }
 
+const control =
+  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-navy outline-none transition-colors placeholder:text-zinc-400 hover:border-zinc-400 focus:border-navy focus:ring-2 focus:ring-navy/15 disabled:bg-zinc-50 disabled:text-zinc-500";
+
 export function Input({ className = "", ...props }: ComponentProps<"input">) {
-  return (
-    <input
-      className={`w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-navy outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 ${className}`}
-      {...props}
-    />
-  );
+  return <input className={`${control} ${className}`} {...props} />;
 }
 
 export function Textarea({ className = "", ...props }: ComponentProps<"textarea">) {
-  return (
-    <textarea
-      className={`w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-navy outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 ${className}`}
-      {...props}
-    />
-  );
+  return <textarea className={`${control} ${className}`} {...props} />;
 }
 
 export function Select({ className = "", ...props }: ComponentProps<"select">) {
-  return (
-    <select
-      className={`w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-navy outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 ${className}`}
-      {...props}
-    />
-  );
+  return <select className={`${control} ${className}`} {...props} />;
 }
 
 export function Field({
@@ -105,14 +93,15 @@ export function Field({
   className?: string;
 }) {
   return (
-    <label className={`flex flex-col gap-1 text-sm font-medium text-navy ${className}`}>
+    <label className={`flex flex-col gap-1.5 text-sm font-medium text-navy ${className}`}>
       <span>{label}</span>
       {children}
-      {hint && <span className="text-xs font-normal text-zinc-500">{hint}</span>}
+      {hint && <span className="text-xs font-normal leading-snug text-zinc-500">{hint}</span>}
     </label>
   );
 }
 
+// Barra continua (porcentaje).
 export function ProgressBar({ percent }: { percent: number }) {
   return (
     <div
@@ -120,19 +109,53 @@ export function ProgressBar({ percent }: { percent: number }) {
       aria-valuenow={percent}
       aria-valuemin={0}
       aria-valuemax={100}
-      className="h-2 w-full overflow-hidden rounded-full bg-zinc-200"
+      className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-200"
     >
       <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${percent}%` }} />
     </div>
   );
 }
 
+// Un segmento por actividad del curso; si son muchas, cae a barra continua.
+export function SegmentProgress({
+  completed,
+  total,
+  className = "",
+}: {
+  completed: number;
+  total: number;
+  className?: string;
+}) {
+  const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+  if (total === 0 || total > 36) {
+    return (
+      <div className={className}>
+        <ProgressBar percent={percent} />
+      </div>
+    );
+  }
+  return (
+    <div
+      role="progressbar"
+      aria-valuenow={percent}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={`${completed} de ${total} actividades completadas`}
+      className={`flex gap-[3px] ${className}`}
+    >
+      {Array.from({ length: total }, (_, i) => (
+        <span key={i} className={`h-1.5 flex-1 rounded-[2px] ${i < completed ? "bg-brand" : "bg-zinc-200"}`} />
+      ))}
+    </div>
+  );
+}
+
 const badgeTone = {
   gray: "bg-zinc-100 text-zinc-700",
-  green: "bg-green-100 text-green-800",
-  amber: "bg-amber-100 text-amber-900",
-  blue: "bg-blue-100 text-blue-800",
-  red: "bg-red-100 text-red-800",
+  green: "bg-[#e3f2ea] text-[#14603f]",
+  amber: "bg-[#fbefd6] text-[#7d4b00]",
+  blue: "bg-[#e5ecf9] text-[#1c4797]",
+  red: "bg-[#fbe6e3] text-[#9a2118]",
 } as const;
 
 export function Badge({
@@ -143,7 +166,7 @@ export function Badge({
   children: ReactNode;
 }) {
   return (
-    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${badgeTone[tone]}`}>
+    <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-semibold ${badgeTone[tone]}`}>
       {children}
     </span>
   );
@@ -151,8 +174,21 @@ export function Badge({
 
 export function Empty({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center text-sm text-zinc-600">
+    <div className="rounded-lg border border-dashed border-zinc-300 bg-white px-6 py-10 text-center text-sm text-zinc-600">
       {children}
+    </div>
+  );
+}
+
+// Cifra destacada con su rótulo, para los paneles de resumen.
+export function Stat({ label, value, note }: { label: string; value: ReactNode; note?: ReactNode }) {
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-white px-5 py-4">
+      <p className="text-sm text-zinc-600">{label}</p>
+      <p className="mt-1 text-3xl font-semibold leading-none text-navy" style={{ fontStretch: "88%" }}>
+        {value}
+      </p>
+      {note && <p className="mt-2 text-xs text-zinc-500">{note}</p>}
     </div>
   );
 }
@@ -174,11 +210,37 @@ export function Flash({
   return (
     <p
       role={errorText ? "alert" : "status"}
-      className={`mb-4 rounded-xl px-4 py-3 text-sm ${
-        errorText ? "bg-red-50 text-red-800" : "bg-green-50 text-green-900"
+      className={`mb-5 rounded-md border-l-4 px-4 py-3 text-sm ${
+        errorText ? "border-red-600 bg-red-50 text-red-900" : "border-green-700 bg-green-50 text-green-900"
       }`}
     >
       {errorText ?? okText}
     </p>
   );
+}
+
+// Tablas de datos: encabezado discreto, filas con separador fino, desplazables en móvil.
+export function TableWrap({ children, minWidth = 640 }: { children: ReactNode; minWidth?: number }) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
+      <table className="w-full border-collapse text-sm" style={{ minWidth }}>
+        {children}
+      </table>
+    </div>
+  );
+}
+
+export function Th({ children, className = "" }: { children?: ReactNode; className?: string }) {
+  return (
+    <th
+      scope="col"
+      className={`border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 text-left text-xs font-semibold text-zinc-600 ${className}`}
+    >
+      {children}
+    </th>
+  );
+}
+
+export function Td({ children, className = "" }: { children?: ReactNode; className?: string }) {
+  return <td className={`border-b border-zinc-100 px-4 py-3 align-middle text-navy ${className}`}>{children}</td>;
 }

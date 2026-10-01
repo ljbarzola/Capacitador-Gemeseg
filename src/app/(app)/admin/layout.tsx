@@ -6,10 +6,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex flex-col gap-6">
-      <nav
-        aria-label="Administración"
-        className="flex gap-1 overflow-x-auto border-b border-zinc-200 pb-3"
-      >
+      <nav aria-label="Administración" className="flex gap-6 overflow-x-auto border-b border-zinc-200">
         <NavLink href="/admin" exact>
           Resumen
         </NavLink>
@@ -17,7 +14,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <NavLink href="/admin/grupos">Grupos</NavLink>
         {user.role === "ADMIN" && <NavLink href="/admin/usuarios">Usuarios</NavLink>}
       </nav>
-      {children}
+      <div>{children}</div>
     </div>
   );
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-16 text-center">
-      <p className="text-sm font-semibold uppercase tracking-wide text-brand">Algo salió mal</p>
+      <p className="text-sm font-semibold text-brand">Algo salió mal</p>
       <h1 className="text-2xl font-semibold text-navy">No pudimos completar la operación</h1>
       <p className="max-w-md text-zinc-600">
         Intente de nuevo. Si el problema continúa, avise a su instructor o al área de sistemas.
@@ -14,11 +14,11 @@ export default function ErrorPage({ reset }: { error: Error & { digest?: string 
         <button
           type="button"
           onClick={reset}
-          className="rounded-lg bg-brand px-5 py-2.5 font-semibold text-white hover:brightness-95"
+          className="rounded-md bg-brand px-5 py-2.5 font-semibold text-white transition-colors hover:bg-[#d6341a]"
         >
           Reintentar
         </button>
-        <Link href="/panel" className="rounded-lg border border-navy px-5 py-2.5 font-semibold text-navy hover:bg-zinc-50">
+        <Link href="/panel" className="rounded-md border border-navy px-5 py-2.5 font-semibold text-navy hover:bg-zinc-50">
           Ir a mis cursos
         </Link>
       </div>

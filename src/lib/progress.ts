@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import type { LessonType, Progression } from "@/generated/prisma/client";
+import { issueCertificate } from "@/lib/certificates";
 import { getPrisma } from "@/lib/prisma";
 
 // Un curso se recorre como una lista plana de "ítems": las lecciones de cada submódulo en
@@ -81,13 +82,19 @@ export async function getOutline(courseId: string, userId: string | null): Promi
   let doneLessons = new Set<string>();
   let passedQuizzes = new Set<string>();
   if (userId) {
+    // Solo cuenta el avance posterior al inicio del ciclo actual (cambia al recertificar).
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+      select: { cycleStartedAt: true },
+    });
+    const since = enrollment?.cycleStartedAt ?? new Date(0);
     const [progress, attempts] = await Promise.all([
       prisma.lessonProgress.findMany({
-        where: { userId, lessonId: { in: lessonIds } },
+        where: { userId, lessonId: { in: lessonIds }, completedAt: { gte: since } },
         select: { lessonId: true },
       }),
       prisma.quizAttempt.findMany({
-        where: { userId, passed: true, quizId: { in: quizIds } },
+        where: { userId, passed: true, quizId: { in: quizIds }, finishedAt: { gte: since } },
         select: { quizId: true },
         distinct: ["quizId"],
       }),
@@ -172,16 +179,26 @@ export async function syncEnrollment(userId: string, courseId: string) {
   if (!outline) return enrollment;
 
   const status = outline.complete ? "COMPLETED" : outline.completed > 0 ? "IN_PROGRESS" : "ASSIGNED";
-  if (status === enrollment.status) return enrollment;
-  return prisma.enrollment.update({
+  if (status === enrollment.status) {
+    // Cubre cursos completados antes de que existieran los certificados.
+    if (status === "COMPLETED") await issueCertificate(enrollment.id);
+    return enrollment;
+  }
+  const updated = await prisma.enrollment.update({
     where: { id: enrollment.id },
     data: { status, completedAt: status === "COMPLETED" ? new Date() : null },
   });
+  if (status === "COMPLETED") await issueCertificate(enrollment.id);
+  return updated;
 }
 
-// Avance de varios usuarios en un curso (para el panel de asignaciones).
-export async function getProgressForUsers(courseId: string, userIds: string[]) {
+// Avance de varias inscripciones de un curso (para listados), respetando el ciclo de cada una.
+export async function getProgressForEnrollments(
+  courseId: string,
+  enrollments: { userId: string; cycleStartedAt: Date }[],
+) {
   const prisma = getPrisma();
+  const userIds = enrollments.map((e) => e.userId);
   const [lessonCount, quizzes] = await Promise.all([
     prisma.lesson.count({ where: { submodule: { module: { courseId } } } }),
     prisma.quiz.findMany({
@@ -192,21 +209,28 @@ export async function getProgressForUsers(courseId: string, userIds: string[]) {
   const total = lessonCount + quizzes.length;
 
   const [lessons, attempts] = await Promise.all([
-    prisma.lessonProgress.groupBy({
-      by: ["userId"],
+    prisma.lessonProgress.findMany({
       where: { userId: { in: userIds }, lesson: { submodule: { module: { courseId } } } },
-      _count: { _all: true },
+      select: { userId: true, completedAt: true },
     }),
     prisma.quizAttempt.findMany({
       where: { userId: { in: userIds }, passed: true, quizId: { in: quizzes.map((q) => q.id) } },
-      select: { userId: true, quizId: true },
-      distinct: ["userId", "quizId"],
+      select: { userId: true, quizId: true, finishedAt: true },
     }),
   ]);
 
+  const since = new Map(enrollments.map((e) => [e.userId, e.cycleStartedAt]));
   const done = new Map<string, number>();
-  for (const row of lessons) done.set(row.userId, row._count._all);
-  for (const row of attempts) done.set(row.userId, (done.get(row.userId) ?? 0) + 1);
+  for (const row of lessons) {
+    if (row.completedAt >= (since.get(row.userId) ?? new Date(0))) done.set(row.userId, (done.get(row.userId) ?? 0) + 1);
+  }
+  const seen = new Set<string>();
+  for (const row of attempts) {
+    const key = `${row.userId}:${row.quizId}`;
+    if (seen.has(key) || row.finishedAt < (since.get(row.userId) ?? new Date(0))) continue;
+    seen.add(key);
+    done.set(row.userId, (done.get(row.userId) ?? 0) + 1);
+  }
 
   return new Map(
     userIds.map((id) => {

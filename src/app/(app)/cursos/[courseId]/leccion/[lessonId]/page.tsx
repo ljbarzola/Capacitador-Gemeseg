@@ -42,14 +42,14 @@ export default async function LessonPage({
 
   return (
     <article className="flex flex-col gap-4">
-      <Card className="flex flex-col gap-4">
+      <Card className="flex flex-col gap-5 p-6 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <h1 className="text-xl font-semibold text-navy sm:text-2xl">{lesson.title}</h1>
+          <h1 className="text-2xl text-navy sm:text-[1.7rem]">{lesson.title}</h1>
           {item.done && <Badge tone="green">Completada</Badge>}
         </div>
 
         {lesson.type === "TEXT" && (
-          <div className="whitespace-pre-wrap break-words leading-relaxed text-zinc-800">{lesson.body}</div>
+          <div className="whitespace-pre-wrap break-words max-w-prose leading-[1.7] text-zinc-800">{lesson.body}</div>
         )}
 
         {lesson.type === "VIDEO_EMBED" &&
@@ -89,9 +89,9 @@ export default async function LessonPage({
               href={lesson.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:brightness-125"
+              className="inline-flex min-h-10 items-center gap-2 rounded-md bg-navy px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1d1b4b]"
             >
-              Abrir enlace ↗
+              Abrir enlace
             </a>
             <p className="mt-2 break-all text-xs text-zinc-500">{lesson.url}</p>
           </div>
@@ -102,7 +102,7 @@ export default async function LessonPage({
             <div>
               <a
                 href={fileUrl}
-                className="inline-flex items-center rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:brightness-125"
+                className="inline-flex min-h-10 items-center gap-2 rounded-md bg-navy px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1d1b4b]"
               >
                 Descargar {lesson.fileName ?? "archivo"}
               </a>
@@ -116,21 +116,21 @@ export default async function LessonPage({
         <div>
           {previous?.accessible && (
             <LinkButton href={itemHref(courseId, previous)} variant="secondary">
-              ← Anterior
+              Anterior
             </LinkButton>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {item.done && next?.accessible && (
             <LinkButton href={itemHref(courseId, next)} variant="secondary">
-              Siguiente →
+              Siguiente
             </LinkButton>
           )}
           {!item.done && (
             <form action={completeLesson}>
               <input type="hidden" name="courseId" value={courseId} />
               <input type="hidden" name="lessonId" value={lessonId} />
-              <Button type="submit">{preview ? "Siguiente →" : "Marcar como completada y continuar"}</Button>
+              <Button type="submit">{preview ? "Siguiente" : "Marcar como completada y continuar"}</Button>
             </form>
           )}
         </div>

@@ -7,7 +7,7 @@ import { requireStaff } from "@/lib/dal";
 import { formatDate } from "@/lib/format";
 import { first } from "@/lib/form";
 import { getPrisma } from "@/lib/prisma";
-import { getProgressForUsers } from "@/lib/progress";
+import { getProgressForEnrollments } from "@/lib/progress";
 import { assignBulk, assignPeople, removeEnrollment } from "./actions";
 
 export const metadata: Metadata = { title: "Asignar curso · Capacitación Gemeseg" };
@@ -71,12 +71,16 @@ export default async function AssignPage({
         status: true,
         dueAt: true,
         assignedAt: true,
+        cycleStartedAt: true,
         user: { select: { id: true, firstNames: true, lastNames: true, email: true, group: { select: { name: true } } } },
       },
     }),
     prisma.enrollment.count({ where: { courseId } }),
   ]);
-  const progress = await getProgressForUsers(courseId, enrollments.map((e) => e.user.id));
+  const progress = await getProgressForEnrollments(
+    courseId,
+    enrollments.map((e) => ({ userId: e.user.id, cycleStartedAt: e.cycleStartedAt })),
+  );
   const students = await prisma.user.count({ where: { active: true, role: "STUDENT" } });
   const pages = Math.max(1, Math.ceil(enrolledCount / PAGE_SIZE));
   const base = `/admin/cursos/${courseId}/asignar`;
@@ -184,9 +188,12 @@ export default async function AssignPage({
               <li key={enrollment.id}>
                 <Card className="grid items-center gap-3 md:grid-cols-[1.5fr_1fr_auto]">
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-navy">
+                    <Link
+                      href={`/avance/personas/${enrollment.user.id}`}
+                      className="block truncate font-semibold text-navy underline-offset-2 hover:underline"
+                    >
                       {enrollment.user.lastNames} {enrollment.user.firstNames}
-                    </p>
+                    </Link>
                     <p className="truncate text-xs text-zinc-600">
                       {enrollment.user.email}
                       {enrollment.user.group && ` · ${enrollment.user.group.name}`}

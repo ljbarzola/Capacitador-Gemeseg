@@ -97,8 +97,11 @@ export function RegistroForm() {
       <Field
         label="Cédula de identidad"
         name="cedula"
-        maxLength={20}
-        hint="Aparecerá en su certificado."
+        inputMode="numeric"
+        pattern="[0-9]*"
+        maxLength={10}
+        autoComplete="off"
+        hint="10 números, sin guiones ni espacios. Aparecerá en su certificado."
         error={errors.cedula?.[0]}
         required
       />

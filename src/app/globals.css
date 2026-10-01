@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
-/* Colores tomados del logotipo de Gemeseg. */
+/* Identidad Gemeseg: azul marino y naranja del logotipo; el naranja es el único color de acción. */
 :root {
-  --background: #ffffff;
+  --background: #f5f6f9;
   --foreground: #100f31;
   --brand-navy: #100f31;
   --brand-orange: #ee3b1b;
@@ -13,12 +13,51 @@
   --color-foreground: var(--foreground);
   --color-navy: var(--brand-navy);
   --color-brand: var(--brand-orange);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-archivo), Arial, Helvetica, sans-serif;
+
+  /* Grises fríos (ligeramente azulados) en lugar del gris neutro por defecto. */
+  --color-zinc-50: #f7f8fb;
+  --color-zinc-100: #eef0f5;
+  --color-zinc-200: #dcdde6;
+  --color-zinc-300: #c4c6d3;
+  --color-zinc-400: #9b9db0;
+  --color-zinc-500: #6b6d82;
+  --color-zinc-600: #54566b;
+  --color-zinc-700: #3d3f55;
+  --color-zinc-800: #272840;
+
+  /* Esquinas más sobrias en toda la interfaz. */
+  --radius-md: 0.3125rem;
+  --radius-lg: 0.4375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-archivo), Arial, Helvetica, sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Títulos: ancho algo condensado, como señalética. */
+h1,
+h2,
+h3 {
+  font-stretch: 88%;
+  letter-spacing: -0.012em;
+  font-weight: 650;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-orange);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

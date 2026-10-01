@@ -74,7 +74,7 @@ model Course {
   coverUrl     String?
   progression  Progression @default(FREE)
   published    Boolean     @default(false)
-  recertMonths Int? // vigencia del certificado; null = no vence
+  recertMonths Int?        @default(12) // vigencia del certificado en meses; null = no vence
   createdById  String
   createdBy    User        @relation(fields: [createdById], references: [id])
   createdAt    DateTime    @default(now())
@@ -212,8 +212,10 @@ model Enrollment {
   dueAt        DateTime?
   assignedAt   DateTime         @default(now())
   completedAt  DateTime?
+  // Inicio del ciclo actual: el avance cuenta solo si es posterior. Al recertificar se reinicia.
+  cycleStartedAt DateTime @default(now())
 
-  certificate Certificate?
+  certificates Certificate[]
 
   @@unique([userId, courseId])
   @@index([courseId])
@@ -233,10 +235,16 @@ model LessonProgress {
 model Certificate {
   id           String     @id @default(cuid())
   code         String     @unique // verificación pública vía QR
-  enrollmentId String     @unique
+  enrollmentId String
   enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  // Datos tal como estaban al emitir: el certificado no cambia si luego se edita el curso o el usuario.
+  holderName   String
+  holderCedula String
+  courseTitle  String
   issuedAt     DateTime   @default(now())
-  expiresAt    DateTime? // según Course.recertMonths
+  expiresAt    DateTime? // según Course.recertMonths; null = no vence
+
+  @@index([enrollmentId])
 }
 
 model CourseFeedback {

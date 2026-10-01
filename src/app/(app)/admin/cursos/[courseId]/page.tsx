@@ -129,7 +129,7 @@ export default async function CourseEditorPage({
               <option value="SEQUENTIAL">Secuencial (en orden)</option>
             </Select>
           </Field>
-          <Field label="Vigencia del certificado (meses)" hint="Déjelo vacío si el certificado no vence.">
+          <Field label="Vigencia del certificado (meses)" hint="12 por defecto. Déjelo vacío si el certificado no debe vencer.">
             <Input name="recertMonths" type="number" min={1} max={120} defaultValue={course.recertMonths ?? ""} />
           </Field>
           <label className="flex items-center gap-2 text-sm font-medium text-navy sm:col-span-2">
@@ -150,7 +150,7 @@ export default async function CourseEditorPage({
         {course.modules.map((module, moduleIndex) => (
           <Card key={module.id} className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wide text-zinc-500">Módulo {moduleIndex + 1}</span>
+              <span className="text-sm font-semibold text-zinc-500">Módulo {moduleIndex + 1}</span>
               <form action={updateModule} className="flex min-w-56 flex-1 items-center gap-2">
                 <input type="hidden" name="id" value={module.id} />
                 <input type="hidden" name="courseId" value={course.id} />
@@ -175,7 +175,7 @@ export default async function CourseEditorPage({
             {module.submodules.map((submodule, submoduleIndex) => (
               <div key={submodule.id} className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wide text-zinc-500">
+                  <span className="text-sm font-semibold text-zinc-500">
                     Submódulo {submoduleIndex + 1}
                   </span>
                   <form action={updateSubmodule} className="flex min-w-56 flex-1 items-center gap-2">

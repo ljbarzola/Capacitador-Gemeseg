@@ -2,6 +2,7 @@
 // solo se muestran los que están en esta lista, para no reflejar texto arbitrario de la URL.
 export const FLASH = {
   guardado: "Cambios guardados.",
+  comentario: "Gracias por sus comentarios.",
   creado: "Creado correctamente.",
   eliminado: "Eliminado correctamente.",
   asignado: "Curso asignado a {n} persona(s).",

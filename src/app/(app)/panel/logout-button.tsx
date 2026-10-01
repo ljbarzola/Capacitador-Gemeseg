@@ -18,7 +18,7 @@ export function LogoutButton() {
     <button
       type="button"
       onClick={onClick}
-      className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm font-medium text-navy hover:bg-zinc-50"
+      className="rounded-md border border-white/25 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
     >
       Salir
     </button>

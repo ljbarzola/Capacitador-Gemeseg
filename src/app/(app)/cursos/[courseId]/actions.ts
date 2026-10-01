@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { certState, startRecertification } from "@/lib/certificates";
 import { itemHref } from "@/lib/course-links";
 import { getCourseAccess } from "@/lib/dal";
 import { getPrisma } from "@/lib/prisma";
@@ -87,4 +88,36 @@ export async function submitQuiz(formData: FormData) {
   });
   if (passed) await syncEnrollment(userId, courseId);
   redirect(`${back}?intento=${attempt.id}`);
+}
+
+// Comentarios finales del curso (texto libre, uno por persona; se pueden editar).
+export async function submitFeedback(formData: FormData) {
+  const courseId = field(formData, "courseId");
+  const comment = field(formData, "comment").trim().slice(0, 3000);
+  const { user, enrollment } = await getCourseAccess(courseId);
+  if (!enrollment || enrollment.status !== "COMPLETED" || !comment) redirect(`/cursos/${courseId}`);
+  await getPrisma().courseFeedback.upsert({
+    where: { userId_courseId: { userId: user.id, courseId } },
+    create: { userId: user.id, courseId, comment },
+    update: { comment },
+  });
+  redirect(`/cursos/${courseId}?ok=comentario`);
+}
+
+// Inicia un nuevo ciclo de certificación cuando el certificado está por vencer o ya venció.
+export async function restartCertification(formData: FormData) {
+  const courseId = field(formData, "courseId");
+  const { enrollment } = await getCourseAccess(courseId);
+  if (!enrollment) redirect(`/cursos/${courseId}`);
+
+  const latest = await getPrisma().certificate.findFirst({
+    where: { enrollmentId: enrollment.id },
+    orderBy: { issuedAt: "desc" },
+    select: { expiresAt: true },
+  });
+  const state = latest ? certState(latest.expiresAt) : null;
+  if (state === "expired" || state === "expiring") {
+    await startRecertification(enrollment.id);
+  }
+  redirect(`/cursos/${courseId}`);
 }

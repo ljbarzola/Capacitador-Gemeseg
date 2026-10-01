@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Badge, Button, Card, Flash, Input, LinkButton, PageHeader, Select } from "@/components/ui";
 import { requireRole } from "@/lib/dal";
 import { first } from "@/lib/form";
@@ -114,7 +115,12 @@ export default async function UsersPage({
                       {user.lastNames} {user.firstNames} {self && <Badge tone="blue">Usted</Badge>}
                     </p>
                     <p className="truncate text-sm text-zinc-600">{user.email}</p>
-                    <p className="text-xs text-zinc-500">Cédula {user.cedula}</p>
+                    <p className="text-xs text-zinc-500">
+                      Cédula {user.cedula} ·{" "}
+                      <Link href={`/avance/personas/${user.id}`} className="font-medium text-navy underline underline-offset-2">
+                        Ver avance
+                      </Link>
+                    </p>
                   </div>
                   <label className="flex flex-col gap-1 text-xs font-medium text-zinc-600">
                     Rol

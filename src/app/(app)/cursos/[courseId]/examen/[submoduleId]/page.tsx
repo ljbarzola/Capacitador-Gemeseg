@@ -88,7 +88,7 @@ export default async function QuizPage({
     <div className="flex flex-col gap-4">
       <Card className="flex flex-col gap-2">
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <h1 className="text-xl font-semibold text-navy sm:text-2xl">Examen: {quiz.submodule.title}</h1>
+          <h1 className="text-2xl text-navy sm:text-[1.7rem]">Examen: {quiz.submodule.title}</h1>
           {item.done && <Badge tone="green">Aprobado</Badge>}
         </div>
         <p className="text-sm text-zinc-600">
@@ -108,7 +108,7 @@ export default async function QuizPage({
           {result.passed ? (
             next?.accessible && (
               <LinkButton href={itemHref(courseId, next)} className="mt-3">
-                Continuar →
+                Continuar
               </LinkButton>
             )
           ) : (
@@ -143,13 +143,13 @@ export default async function QuizPage({
                   {question.options.map((option) => (
                     <label
                       key={option.id}
-                      className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 px-3 py-2 hover:bg-zinc-50 has-[:checked]:border-brand has-[:checked]:bg-brand/5"
+                      className="flex cursor-pointer items-start gap-3 rounded-md border border-zinc-200 px-3 py-2.5 hover:bg-zinc-50 has-[:checked]:border-navy has-[:checked]:bg-zinc-50"
                     >
                       <input
                         type={multiple ? "checkbox" : "radio"}
                         name={`q_${question.id}`}
                         value={option.id}
-                        className="mt-1 size-4 accent-[#ee3b1b]"
+                        className="mt-0.5 size-4 accent-[#100f31]"
                       />
                       <span className="text-sm text-zinc-800">{option.text}</span>
                     </label>

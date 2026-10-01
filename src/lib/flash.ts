@@ -14,6 +14,8 @@ export const FLASH = {
   pregunta_invalida: "La pregunta no es válida: revise el texto, las opciones y la respuesta correcta.",
   leccion_invalida: "La lección no es válida: revise los campos.",
   enlace_invalido: "El enlace no es válido. Para video use YouTube o Vimeo.",
+  sesion_invalida: "La sesión no es válida: revise la fecha, la hora, el enlace (debe empezar con https://) y el instructor.",
+  asistencia_guardada: "Asistencia guardada.",
   campo_invalido: "El campo no es válido: escriba un nombre y, si es una lista, al menos dos opciones.",
   perfil_invalido: "Revise los datos de su perfil: hay campos obligatorios vacíos o con una opción no válida.",
   perfil_guardado: "Sus datos se guardaron.",

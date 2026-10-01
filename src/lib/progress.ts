@@ -1,13 +1,16 @@
 import "server-only";
 import { cache } from "react";
-import type { LessonType, Progression } from "@/generated/prisma/client";
+import type { AttendanceStatus, LessonType, Progression } from "@/generated/prisma/client";
 import { issueCertificate } from "@/lib/certificates";
 import { getPrisma } from "@/lib/prisma";
+import { countsAsDone } from "@/lib/sessions";
 
 // Un curso se recorre como una lista plana de "ítems": las lecciones de cada submódulo en
 // orden y, si el submódulo tiene examen con preguntas, el examen al final de sus lecciones.
-// Un ítem está hecho si la lección se marcó como completada o si el examen se aprobó.
-// En progresión SECUENCIAL solo es accesible si todos los anteriores están hechos.
+// Un ítem está hecho si la lección se marcó como completada o si el examen se aprobó. Una sesión
+// en vivo está hecha si el instructor marcó "Asistió" o "Justificada" (en el ciclo actual).
+// En progresión SECUENCIAL solo es accesible si todos los anteriores están hechos, salvo las
+// sesiones en vivo: siempre son accesibles y nunca bloquean lo que sigue.
 
 export type OutlineItem = {
   kind: "lesson" | "quiz";
@@ -16,6 +19,8 @@ export type OutlineItem = {
   title: string;
   submoduleId: string;
   lessonType?: LessonType;
+  startsAt?: Date; // solo sesiones en vivo
+  attendance?: AttendanceStatus | null; // solo sesiones en vivo
   done: boolean;
   accessible: boolean;
 };
@@ -64,7 +69,7 @@ export async function getOutline(courseId: string, userId: string | null): Promi
             select: {
               id: true,
               title: true,
-              lessons: { orderBy: byOrder, select: { id: true, title: true, type: true } },
+              lessons: { orderBy: byOrder, select: { id: true, title: true, type: true, startsAt: true } },
               quiz: { select: { id: true, _count: { select: { questions: true } } } },
             },
           },
@@ -79,8 +84,13 @@ export async function getOutline(courseId: string, userId: string | null): Promi
     m.submodules.flatMap((s) => (s.quiz && s.quiz._count.questions > 0 ? [s.quiz.id] : [])),
   );
 
+  const sessionIds = course.modules.flatMap((m) =>
+    m.submodules.flatMap((s) => s.lessons.filter((l) => l.type === "SESSION").map((l) => l.id)),
+  );
+
   let doneLessons = new Set<string>();
   let passedQuizzes = new Set<string>();
+  const attendance = new Map<string, AttendanceStatus>();
   if (userId) {
     // Solo cuenta el avance posterior al inicio del ciclo actual (cambia al recertificar).
     const enrollment = await prisma.enrollment.findUnique({
@@ -88,7 +98,7 @@ export async function getOutline(courseId: string, userId: string | null): Promi
       select: { cycleStartedAt: true },
     });
     const since = enrollment?.cycleStartedAt ?? new Date(0);
-    const [progress, attempts] = await Promise.all([
+    const [progress, attempts, marks] = await Promise.all([
       prisma.lessonProgress.findMany({
         where: { userId, lessonId: { in: lessonIds }, completedAt: { gte: since } },
         select: { lessonId: true },
@@ -98,7 +108,14 @@ export async function getOutline(courseId: string, userId: string | null): Promi
         select: { quizId: true },
         distinct: ["quizId"],
       }),
+      sessionIds.length
+        ? prisma.sessionAttendance.findMany({
+            where: { userId, lessonId: { in: sessionIds }, markedAt: { gte: since } },
+            select: { lessonId: true, status: true },
+          })
+        : Promise.resolve([]),
     ]);
+    for (const m of marks) attendance.set(m.lessonId, m.status);
     doneLessons = new Set(progress.map((p) => p.lessonId));
     passedQuizzes = new Set(attempts.map((a) => a.quizId));
   }
@@ -107,11 +124,12 @@ export async function getOutline(courseId: string, userId: string | null): Promi
   const items: OutlineItem[] = [];
   let previousDone = true;
 
-  const push = (item: Omit<OutlineItem, "accessible">) => {
-    const accessible = !sequential || previousDone;
+  // gate = false: la sesión en vivo siempre es accesible y no condiciona a los ítems siguientes.
+  const push = (item: Omit<OutlineItem, "accessible">, gate = true) => {
+    const accessible = !gate || !sequential || previousDone;
     const full = { ...item, accessible };
     items.push(full);
-    previousDone = previousDone && item.done;
+    if (gate) previousDone = previousDone && item.done;
     return full;
   };
 
@@ -119,8 +137,25 @@ export async function getOutline(courseId: string, userId: string | null): Promi
     id: module.id,
     title: module.title,
     submodules: module.submodules.map((submodule) => {
-      const subItems: OutlineItem[] = submodule.lessons.map((lesson) =>
-        push({
+      const subItems: OutlineItem[] = submodule.lessons.map((lesson) => {
+        if (lesson.type === "SESSION") {
+          const status = attendance.get(lesson.id) ?? null;
+          return push(
+            {
+              kind: "lesson",
+              key: `lesson:${lesson.id}`,
+              id: lesson.id,
+              title: lesson.title,
+              submoduleId: submodule.id,
+              lessonType: lesson.type,
+              startsAt: lesson.startsAt ?? undefined,
+              attendance: status,
+              done: countsAsDone(status),
+            },
+            false,
+          );
+        }
+        return push({
           kind: "lesson",
           key: `lesson:${lesson.id}`,
           id: lesson.id,
@@ -128,8 +163,8 @@ export async function getOutline(courseId: string, userId: string | null): Promi
           submoduleId: submodule.id,
           lessonType: lesson.type,
           done: doneLessons.has(lesson.id),
-        }),
-      );
+        });
+      });
       if (submodule.quiz && submodule.quiz._count.questions > 0) {
         subItems.push(
           push({
@@ -161,7 +196,12 @@ export async function getOutline(courseId: string, userId: string | null): Promi
     completed,
     percent: items.length === 0 ? 0 : Math.round((completed / items.length) * 100),
     complete: items.length > 0 && completed === items.length,
-    next: items.find((i) => !i.done && i.accessible) ?? null,
+    // "Continuar" lleva primero al contenido pendiente; las sesiones pendientes quedan para el final
+    // porque dependen de la fecha y de que el instructor marque la asistencia.
+    next:
+      items.find((i) => !i.done && i.accessible && i.lessonType !== "SESSION") ??
+      items.find((i) => !i.done && i.accessible) ??
+      null,
   };
 }
 
@@ -192,6 +232,14 @@ export async function syncEnrollment(userId: string, courseId: string) {
   return updated;
 }
 
+// Recalcula varias inscripciones con concurrencia limitada (marcas masivas de asistencia: 200 a 500
+// personas deben resolverse en pocos segundos sin saturar la base de datos).
+export async function syncEnrollments(courseId: string, userIds: string[], concurrency = 10) {
+  for (let i = 0; i < userIds.length; i += concurrency) {
+    await Promise.all(userIds.slice(i, i + concurrency).map((id) => syncEnrollment(id, courseId)));
+  }
+}
+
 // Avance de varias inscripciones de un curso (para listados), respetando el ciclo de cada una.
 export async function getProgressForEnrollments(
   courseId: string,
@@ -208,7 +256,7 @@ export async function getProgressForEnrollments(
   ]);
   const total = lessonCount + quizzes.length;
 
-  const [lessons, attempts] = await Promise.all([
+  const [lessons, attempts, marks] = await Promise.all([
     prisma.lessonProgress.findMany({
       where: { userId: { in: userIds }, lesson: { submodule: { module: { courseId } } } },
       select: { userId: true, completedAt: true },
@@ -217,9 +265,21 @@ export async function getProgressForEnrollments(
       where: { userId: { in: userIds }, passed: true, quizId: { in: quizzes.map((q) => q.id) } },
       select: { userId: true, quizId: true, finishedAt: true },
     }),
+    prisma.sessionAttendance.findMany({
+      where: {
+        userId: { in: userIds },
+        status: { in: ["ATTENDED", "EXCUSED"] },
+        lesson: { submodule: { module: { courseId } } },
+      },
+      select: { userId: true, markedAt: true },
+    }),
   ]);
 
   const since = new Map(enrollments.map((e) => [e.userId, e.cycleStartedAt]));
+  const doneSessions = new Map<string, number>();
+  for (const row of marks) {
+    if (row.markedAt >= (since.get(row.userId) ?? new Date(0))) doneSessions.set(row.userId, (doneSessions.get(row.userId) ?? 0) + 1);
+  }
   const done = new Map<string, number>();
   for (const row of lessons) {
     if (row.completedAt >= (since.get(row.userId) ?? new Date(0))) done.set(row.userId, (done.get(row.userId) ?? 0) + 1);
@@ -234,7 +294,7 @@ export async function getProgressForEnrollments(
 
   return new Map(
     userIds.map((id) => {
-      const completed = Math.min(done.get(id) ?? 0, total);
+      const completed = Math.min((done.get(id) ?? 0) + (doneSessions.get(id) ?? 0), total);
       return [id, { completed, total, percent: total === 0 ? 0 : Math.round((completed / total) * 100) }] as const;
     }),
   );

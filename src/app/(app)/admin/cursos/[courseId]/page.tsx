@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { ConfirmButton } from "@/components/confirm-button";
 import { Badge, Button, Card, Field, Flash, Input, LinkButton, PageHeader, Select, Textarea } from "@/components/ui";
 import { requireStaff } from "@/lib/dal";
+import { formatLongDate, formatTime } from "@/lib/format";
+import { meetingProvider } from "@/lib/sessions";
 import { getPrisma } from "@/lib/prisma";
 import {
   addModule,
@@ -27,6 +29,7 @@ const TYPE_LABEL = {
   IMAGE: "Imagen",
   LINK: "Enlace",
   FILE: "Archivo",
+  SESSION: "Sesión en vivo",
 } as const;
 
 function MoveButtons({ kind, id, courseId }: { kind: string; id: string; courseId: string }) {
@@ -76,7 +79,15 @@ export default async function CourseEditorPage({
             include: {
               lessons: {
                 orderBy: [{ order: "asc" }, { id: "asc" }],
-                select: { id: true, title: true, type: true },
+                select: {
+                  id: true,
+                  title: true,
+                  type: true,
+                  startsAt: true,
+                  url: true,
+                  instructor: { select: { firstNames: true, lastNames: true } },
+                  _count: { select: { attendance: true } },
+                },
               },
               quiz: { select: { id: true, _count: { select: { questions: true } } } },
             },
@@ -205,8 +216,24 @@ export default async function CourseEditorPage({
                       key={lesson.id}
                       className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2"
                     >
-                      <span className="min-w-40 flex-1 text-sm font-medium text-navy">{lesson.title}</span>
-                      <Badge>{TYPE_LABEL[lesson.type]}</Badge>
+                      <span className="min-w-40 flex-1 text-sm font-medium text-navy">
+                        {lesson.title}
+                        {lesson.type === "SESSION" && (
+                          <span className="mt-0.5 block text-xs font-normal text-zinc-500">
+                            {lesson.startsAt ? `${formatLongDate(lesson.startsAt)}, ${formatTime(lesson.startsAt)}` : "Sin fecha"}
+                            {" · "}
+                            {meetingProvider(lesson.url) ?? "Sin enlace"}
+                            {" · "}
+                            {lesson.instructor ? `${lesson.instructor.firstNames} ${lesson.instructor.lastNames}` : "Sin instructor"}
+                          </span>
+                        )}
+                      </span>
+                      <Badge tone={lesson.type === "SESSION" ? "teal" : "gray"}>{TYPE_LABEL[lesson.type]}</Badge>
+                      {lesson.type === "SESSION" && (
+                        <LinkButton href={`/admin/cursos/${course.id}/sesion/${lesson.id}/asistencia`} variant="dark">
+                          Asistencia{lesson._count.attendance ? ` (${lesson._count.attendance})` : ""}
+                        </LinkButton>
+                      )}
                       <MoveButtons kind="lesson" id={lesson.id} courseId={course.id} />
                       <LinkButton href={`/admin/cursos/${course.id}/leccion/${lesson.id}`} variant="secondary">
                         Editar

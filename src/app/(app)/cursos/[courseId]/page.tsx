@@ -43,7 +43,8 @@ export default async function CoursePage({ params }: { params: Promise<{ courseI
   const accent = (await getCourseAccents()).get(courseId) ?? accentFor(courseId);
   const firstOpen = outline.items.find((i) => i.accessible);
   const target = preview ? firstOpen : (outline.next ?? firstOpen);
-  const lessons = outline.items.filter((i) => i.kind === "lesson").length;
+  const sessions = outline.items.filter((i) => i.lessonType === "SESSION").length;
+  const lessons = outline.items.filter((i) => i.kind === "lesson").length - sessions;
   const quizzes = outline.items.filter((i) => i.kind === "quiz").length;
   const state = cert ? certState(cert.expiresAt) : null;
   const needsRenewal = state === "expired" || state === "expiring";
@@ -53,7 +54,7 @@ export default async function CoursePage({ params }: { params: Promise<{ courseI
     {
       icon: <IconBook />,
       label: "Contenido",
-      value: `${lessons} lección(es)${quizzes ? ` y ${quizzes} examen(es)` : ""}`,
+      value: [lessons ? `${lessons} lección(es)` : "", sessions ? `${sessions} sesión(es) en vivo` : "", quizzes ? `${quizzes} examen(es)` : ""].filter(Boolean).join(", "),
     },
     {
       icon: <IconList />,

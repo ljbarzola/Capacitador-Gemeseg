@@ -33,6 +33,7 @@ export const AUDIT_ACTIONS = {
   "certificado.emitir": "Certificado emitido",
   "certificado.renovar": "Recertificación iniciada",
   "comentario.reemplazar": "Comentario reemplazado",
+  "sesion.asistencia": "Asistencia a sesión en vivo",
 } as const;
 
 export type AuditAction = keyof typeof AUDIT_ACTIONS;

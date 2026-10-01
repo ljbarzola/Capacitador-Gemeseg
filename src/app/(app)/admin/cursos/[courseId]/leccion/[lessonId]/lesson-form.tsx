@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui";
 import { requestUpload, saveLesson } from "../../../actions";
 
-type LessonType = "TEXT" | "VIDEO_EMBED" | "VIDEO_UPLOAD" | "IMAGE" | "LINK" | "FILE";
+type LessonType = "TEXT" | "VIDEO_EMBED" | "VIDEO_UPLOAD" | "IMAGE" | "LINK" | "FILE" | "SESSION";
 
 const TYPES: { value: LessonType; label: string }[] = [
   { value: "TEXT", label: "Texto" },
@@ -13,6 +13,7 @@ const TYPES: { value: LessonType; label: string }[] = [
   { value: "IMAGE", label: "Imagen" },
   { value: "LINK", label: "Enlace externo" },
   { value: "FILE", label: "Archivo para descargar" },
+  { value: "SESSION", label: "Sesión en vivo (Meet, Zoom, Teams…)" },
 ];
 
 type Initial = {
@@ -23,6 +24,9 @@ type Initial = {
   url: string | null;
   storagePath: string | null;
   fileName: string | null;
+  sessionDate?: string;
+  sessionTime?: string;
+  instructorId?: string;
 };
 
 type Upload =
@@ -49,10 +53,12 @@ export function LessonForm({
   courseId,
   submoduleId,
   initial,
+  instructors,
 }: {
   courseId: string;
   submoduleId?: string;
   initial?: Initial;
+  instructors: { id: string; name: string }[];
 }) {
   const [type, setType] = useState<LessonType>(initial?.type ?? "TEXT");
   const [storagePath, setStoragePath] = useState(initial?.storagePath ?? "");
@@ -126,6 +132,39 @@ export function LessonForm({
         <Field label="Contenido" hint="Separe los párrafos con una línea en blanco.">
           <Textarea name="body" defaultValue={initial?.body ?? ""} rows={12} maxLength={50000} required />
         </Field>
+      )}
+
+      {type === "SESSION" && (
+        <div className="grid gap-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 sm:grid-cols-2">
+          <Field label="Fecha de la sesión">
+            <Input name="sessionDate" type="date" defaultValue={initial?.sessionDate} required />
+          </Field>
+          <Field label="Hora de inicio" hint="Hora de Ecuador (Guayaquil).">
+            <Input name="sessionTime" type="time" defaultValue={initial?.sessionTime} required />
+          </Field>
+          <Field label="Instructor responsable" hint="Quien dicta la sesión y registra la asistencia." className="sm:col-span-2">
+            <Select name="instructorId" defaultValue={initial?.instructorId ?? ""} required>
+              <option value="" disabled>
+                Elija…
+              </option>
+              {instructors.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field
+            label="Enlace de la reunión"
+            hint="Meet, Zoom, Teams u otra plataforma. Debe empezar con https://"
+            className="sm:col-span-2"
+          >
+            <Input name="url" type="url" defaultValue={initial?.url ?? ""} required placeholder="https://meet.google.com/…" />
+          </Field>
+          <Field label="Indicaciones para los participantes (opcional)" hint="Qué deben preparar, llevar o leer antes de conectarse." className="sm:col-span-2">
+            <Textarea name="body" defaultValue={initial?.body ?? ""} rows={4} maxLength={5000} />
+          </Field>
+        </div>
       )}
 
       {(type === "VIDEO_EMBED" || type === "LINK") && (

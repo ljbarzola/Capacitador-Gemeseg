@@ -26,6 +26,8 @@ export async function completeLesson(formData: FormData) {
   const key = `lesson:${lessonId}`;
   const item = outline?.items.find((i) => i.key === key);
   if (!outline || !item || !item.accessible) redirect(`/cursos/${courseId}`);
+  // La asistencia a una sesión en vivo la registra el instructor; la persona no la marca.
+  if (item.lessonType === "SESSION") redirect(`/cursos/${courseId}/leccion/${lessonId}`);
 
   if (userId) {
     await getPrisma().lessonProgress.upsert({

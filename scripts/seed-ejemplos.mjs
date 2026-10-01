@@ -3,6 +3,7 @@
 //
 //   DATABASE_URL=postgresql://... node scripts/seed-ejemplos.mjs [--archivos] [--inscribir]
 //
+//   --solo=TEXTO  carga o reemplaza solo los ejemplos cuyo título contenga TEXTO (no toca los demás)
 //   --archivos   sube la imagen y el PDF de ejemplo al bucket (requiere gcloud con sesión iniciada)
 //   --inscribir  inscribe a los estudiantes activos en los cursos publicados (no a administradores ni instructores)
 //
@@ -17,6 +18,9 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const args = new Set(process.argv.slice(2));
+// --solo=<texto>: trabaja únicamente con los cursos de ejemplo cuyo título contenga ese texto
+// (así se puede agregar un curso nuevo sin borrar el avance de los demás ejemplos).
+const only = process.argv.find((a) => a.startsWith("--solo="))?.slice("--solo=".length) ?? null;
 const BUCKET = process.env.MEDIA_BUCKET ?? "capacitaciongemeseg-media";
 const connectionString = process.env.DATABASE_URL ?? process.env.DB_URL;
 if (!connectionString) throw new Error("Falta DATABASE_URL");
@@ -52,6 +56,14 @@ const tf = (text, value) => ({
   ],
 });
 const text = (title, body) => ({ type: "TEXT", title, body });
+// Sesión en vivo: días desde hoy y hora de inicio en Ecuador (UTC-5). El enlace es de ejemplo.
+const ecuadorToday = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Guayaquil" }).format(new Date());
+const session = (title, daysFromToday, time, url, body) => {
+  const base = new Date(`${ecuadorToday}T12:00:00-05:00`);
+  base.setDate(base.getDate() + daysFromToday);
+  const day = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Guayaquil" }).format(base);
+  return { type: "SESSION", title, url, body, startsAt: new Date(`${day}T${time}:00-05:00`) };
+};
 const video = (title, url) => ({ type: "VIDEO_EMBED", title, url });
 const link = (title, url) => ({ type: "LINK", title, url });
 const image = (title, asset) => ({ type: "IMAGE", title, asset });
@@ -572,6 +584,87 @@ const courses = [
   },
 
   {
+    title: "Plan de emergencia y evacuación (Ejemplo, mixto)",
+    description:
+      "Curso mixto: conceptos que estudia a su ritmo y tres clases en vivo con el instructor (una ya realizada y dos próximas). Las sesiones usan enlaces de ejemplo: el instructor coloca el enlace real al programarlas. La asistencia la registra el instructor y cuenta para completar el curso; las sesiones nunca bloquean el contenido." + NOTE,
+    progression: "SEQUENTIAL",
+    published: true,
+    recertMonths: 12,
+    modules: [
+      {
+        title: "Conceptos previos (a su ritmo)",
+        subs: [
+          {
+            title: "Qué es un plan de emergencia",
+            lessons: [
+              text(
+                "Objetivo y partes de un plan de emergencia",
+                "Un plan de emergencia define quién hace qué, dónde y en qué orden cuando ocurre un evento que pone en riesgo a las personas: incendio, sismo, amenaza o accidente grave.\n\nSus partes básicas son:\n\n- Identificación de riesgos del lugar.\n- Responsables y cadena de comunicación.\n- Rutas de evacuación y puntos de encuentro señalizados.\n- Procedimiento para cada tipo de evento.\n- Simulacros periódicos para practicarlo.",
+              ),
+              text(
+                "Rutas de evacuación y punto de encuentro",
+                "Toda persona que trabaja en un puesto debe conocer, antes de que ocurra una emergencia, la ruta de evacuación más corta, una ruta alterna y el punto de encuentro.\n\nAl evacuar: mantenga la calma, no use ascensores, ayude a quien lo necesite sin ponerse en riesgo, cierre puertas sin llave y diríjase al punto de encuentro, donde se verifica que todos estén presentes.",
+              ),
+            ],
+            quiz: {
+              passing: 70,
+              questions: [
+                single("¿Dónde debe dirigirse una persona al evacuar?", "Al punto de encuentro señalizado", ["Al estacionamiento más cercano", "De vuelta a su puesto", "A la entrada principal para observar"]),
+                tf("Durante una evacuación se recomienda usar los ascensores para ir más rápido.", false),
+              ],
+            },
+          },
+        ],
+      },
+      {
+        title: "Clases en vivo",
+        subs: [
+          {
+            title: "Sesión 1: roles y responsabilidades",
+            lessons: [
+              session(
+                "Clase en vivo 1: roles y responsabilidades",
+                -3,
+                "15:00",
+                "https://meet.google.com/xxx-xxxx-xxx",
+                "Revise antes las lecciones de «Conceptos previos». Tenga a mano el plano de evacuación de su puesto y conéctese desde un lugar tranquilo.",
+              ),
+            ],
+          },
+          {
+            title: "Sesión 2: simulacro guiado",
+            lessons: [
+              session(
+                "Clase en vivo 2: simulacro guiado",
+                3,
+                "10:00",
+                "https://zoom.us/j/0000000000",
+                "Durante la sesión se resolverá un caso de evacuación. Lleve su credencial y el listado de contactos de su puesto.",
+              ),
+              text(
+                "Material del simulacro",
+                "Después de la clase en vivo encontrará aquí el material de apoyo y el resumen de los puntos tratados durante el simulacro guiado.",
+              ),
+            ],
+          },
+          {
+            title: "Sesión 3: evaluación práctica",
+            lessons: [
+              session(
+                "Clase en vivo 3: evaluación práctica",
+                10,
+                "15:00",
+                "https://teams.microsoft.com/l/meetup-join/ejemplo",
+                "Sesión de evaluación en grupos. Cada participante explicará el procedimiento de evacuación de su puesto.",
+              ),
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  {
     title: "Control de accesos y rondas de vigilancia (Borrador de ejemplo)",
     description:
       "Curso en preparación, todavía sin publicar: sirve para ver cómo se ve un borrador, un examen sin preguntas y un módulo vacío." + NOTE,
@@ -650,7 +743,12 @@ async function main() {
   if (!admin) throw new Error("No hay ningún administrador; regístrese primero en la plataforma.");
 
   // Limpieza de una ejecución anterior (incluye los archivos del bucket).
-  const old = (await q(`select id from "Course" where title like '% (Ejemplo)' or title like '% (Borrador de ejemplo)'`)).rows.map((r) => r.id);
+  const old = (
+    await q(
+      `select id from "Course" where (title like '% (Ejemplo)' or title like '% (Ejemplo, mixto)' or title like '% (Borrador de ejemplo)') and ($1::text is null or title ilike '%' || $1 || '%')`,
+      [only],
+    )
+  ).rows.map((r) => r.id);
   if (old.length) {
     const files = (
       await q(`select l."storagePath" p from "Lesson" l join "Submodule" s on s.id=l."submoduleId" join "Module" m on m.id=s."moduleId" where m."courseId" = any($1) and l."storagePath" is not null`, [old])
@@ -677,7 +775,7 @@ async function main() {
   }
 
   const stats = { courses: 0, modules: 0, subs: 0, lessons: 0, quizzes: 0, questions: 0 };
-  for (const c of courses) {
+  for (const c of courses.filter((c) => !only || c.title.toLowerCase().includes(only.toLowerCase()))) {
     const courseId = cuid();
     await q(
       `insert into "Course"(id,title,description,progression,published,"recertMonths","createdById","updatedAt") values($1,$2,$3,$4::"Progression",$5,$6,$7,now())`,
@@ -701,6 +799,8 @@ async function main() {
           let url = l.url ?? null;
           let storagePath = null;
           let fileName = null;
+          const startsAt = l.startsAt ?? null;
+          const instructorId = l.type === "SESSION" ? admin.id : null;
           if (l.asset) {
             const a = assets[l.asset];
             if (!a) continue; // sin --archivos no se crean las lecciones con archivo
@@ -709,8 +809,8 @@ async function main() {
             fileName = a.name;
           }
           await q(
-            `insert into "Lesson"(id,"submoduleId",title,type,"order",body,url,"storagePath","fileName") values($1,$2,$3,$4::"LessonType",$5,$6,$7,$8,$9)`,
-            [cuid(), subId, l.title, type, li++, body, url, storagePath, fileName],
+            `insert into "Lesson"(id,"submoduleId",title,type,"order",body,url,"storagePath","fileName","startsAt","instructorId") values($1,$2,$3,$4::"LessonType",$5,$6,$7,$8,$9,$10,$11)`,
+            [cuid(), subId, l.title, type, li++, body, url, storagePath, fileName, startsAt, instructorId],
           );
           stats.lessons++;
         }

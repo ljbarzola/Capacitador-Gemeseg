@@ -1,7 +1,8 @@
 import "server-only";
-import type { EnrollmentStatus, Progression } from "@/generated/prisma/client";
+import type { AttendanceStatus, EnrollmentStatus, Progression } from "@/generated/prisma/client";
 import { type CertState, certState } from "@/lib/certificates";
 import { getPrisma } from "@/lib/prisma";
+import { countsAsDone } from "@/lib/sessions";
 
 // Reportes de avance. Todo se calcula respetando el ciclo de cada inscripción: el avance
 // anterior a una recertificación no cuenta para el ciclo actual.
@@ -21,6 +22,7 @@ export type PersonRow = {
   completed: number;
   total: number;
   percent: number;
+  sessionsDone: number; // sesiones en vivo cumplidas (asistió o justificada) en el ciclo actual
   modules: { id: string; title: string; done: number; total: number }[];
   lastActivity: Date | null;
   avgScore: number | null; // promedio de la mejor nota de cada examen del ciclo
@@ -39,6 +41,17 @@ export type QuizStat = {
   questions: { id: string; text: string; correctRate: number | null }[];
 };
 
+export type SessionStat = {
+  id: string;
+  title: string;
+  startsAt: Date | null;
+  instructor: string | null;
+  attended: number;
+  excused: number;
+  absent: number;
+  unmarked: number;
+};
+
 export type CourseReport = {
   course: { id: string; title: string; published: boolean; progression: Progression; recertMonths: number | null };
   total: number;
@@ -55,6 +68,7 @@ export type CourseReport = {
     certExpired: number;
     passRate: number | null;
   };
+  sessions: SessionStat[];
   moduleStats: { id: string; title: string; items: number; completedPeople: number; avgPercent: number }[];
   quizzes: QuizStat[];
   feedback: { name: string; comment: string; createdAt: Date }[];
@@ -86,7 +100,16 @@ export async function getCourseReport(
             select: {
               id: true,
               title: true,
-              lessons: { orderBy: order, select: { id: true } },
+              lessons: {
+                orderBy: order,
+                select: {
+                  id: true,
+                  title: true,
+                  type: true,
+                  startsAt: true,
+                  instructor: { select: { firstNames: true, lastNames: true } },
+                },
+              },
               quiz: {
                 select: {
                   id: true,
@@ -115,7 +138,9 @@ export async function getCourseReport(
   const quizDefs = course.modules.flatMap((m) =>
     m.submodules.flatMap((s) => (s.quiz && s.quiz.questions.length > 0 ? [{ submodule: s, quiz: s.quiz }] : [])),
   );
-  const lessonIds = course.modules.flatMap((m) => m.submodules.flatMap((s) => s.lessons.map((l) => l.id)));
+  const allLessons = course.modules.flatMap((m) => m.submodules.flatMap((s) => s.lessons));
+  const lessonIds = allLessons.filter((l) => l.type !== "SESSION").map((l) => l.id);
+  const sessionLessons = allLessons.filter((l) => l.type === "SESSION");
 
   const enrollments = await prisma.enrollment.findMany({
     where: {
@@ -151,7 +176,7 @@ export async function getCourseReport(
   });
   const userIds = enrollments.map((e) => e.userId);
 
-  const [progress, attempts, feedback] = await Promise.all([
+  const [progress, attempts, feedback, marks] = await Promise.all([
     prisma.lessonProgress.findMany({
       where: { userId: { in: userIds }, lessonId: { in: lessonIds } },
       select: { userId: true, lessonId: true, completedAt: true },
@@ -165,7 +190,21 @@ export async function getCourseReport(
       orderBy: { createdAt: "desc" },
       select: { comment: true, createdAt: true, user: { select: { firstNames: true, lastNames: true } } },
     }),
+    sessionLessons.length
+      ? prisma.sessionAttendance.findMany({
+          where: { userId: { in: userIds }, lessonId: { in: sessionLessons.map((l) => l.id) } },
+          select: { userId: true, lessonId: true, status: true, markedAt: true },
+        })
+      : Promise.resolve([] as { userId: string; lessonId: string; status: AttendanceStatus; markedAt: Date }[]),
   ]);
+
+  const marksByUser = new Map<string, typeof marks>();
+  for (const m of marks) {
+    const list = marksByUser.get(m.userId) ?? [];
+    list.push(m);
+    marksByUser.set(m.userId, list);
+  }
+  const sessionCounts = new Map(sessionLessons.map((l) => [l.id, { attended: 0, excused: 0, absent: 0 }]));
 
   const progressByUser = new Map<string, { lessonId: string; at: Date }[]>();
   for (const p of progress) {
@@ -194,6 +233,21 @@ export async function getCourseReport(
         touch(p.at);
       }
     }
+    let sessionsDone = 0;
+    for (const m of marksByUser.get(e.userId) ?? []) {
+      if (m.markedAt < since) continue;
+      touch(m.markedAt);
+      const c = sessionCounts.get(m.lessonId);
+      if (c) {
+        if (m.status === "ATTENDED") c.attended++;
+        else if (m.status === "EXCUSED") c.excused++;
+        else c.absent++;
+      }
+      if (countsAsDone(m.status)) {
+        done.add(`l:${m.lessonId}`);
+        sessionsDone++;
+      }
+    }
     const best = new Map<string, number>();
     for (const a of attemptsByUser.get(e.userId) ?? []) {
       if (a.finishedAt < since) continue;
@@ -215,6 +269,7 @@ export async function getCourseReport(
       name: `${e.user.lastNames} ${e.user.firstNames}`,
       email: e.user.email,
       cedula: e.user.cedula,
+      sessionsDone,
       group: e.user.group?.name ?? null,
       extra: (e.user.extraFields ?? {}) as Record<string, string>,
       status: e.status,
@@ -295,6 +350,17 @@ export async function getCourseReport(
     total,
     people,
     summary,
+    sessions: sessionLessons.map((l) => {
+      const c = sessionCounts.get(l.id)!;
+      return {
+        id: l.id,
+        title: l.title,
+        startsAt: l.startsAt,
+        instructor: l.instructor ? `${l.instructor.firstNames} ${l.instructor.lastNames}` : null,
+        ...c,
+        unmarked: Math.max(0, enrollments.length - c.attended - c.excused - c.absent),
+      };
+    }),
     moduleStats,
     quizzes,
     feedback: feedback.map((f) => ({

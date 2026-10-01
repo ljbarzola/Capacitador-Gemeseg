@@ -93,6 +93,48 @@ export default async function CourseProgressPage({
         />
       </div>
 
+      {report.sessions.length > 0 && (
+        <>
+          <h2 className="mb-3 text-xl text-navy">Sesiones en vivo</h2>
+          <div className="mb-10">
+            <TableWrap minWidth={760}>
+              <thead>
+                <tr>
+                  <Th>Sesión</Th>
+                  <Th>Fecha</Th>
+                  <Th>Instructor</Th>
+                  <Th>Asistieron</Th>
+                  <Th>Justificadas</Th>
+                  <Th>No asistieron</Th>
+                  <Th>Sin marcar</Th>
+                  <Th className="text-right">Asistencia</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.sessions.map((session) => (
+                  <tr key={session.id}>
+                    <Td className="font-medium">{session.title}</Td>
+                    <Td className="whitespace-nowrap text-zinc-600">
+                      {session.startsAt ? formatDateTime(session.startsAt) : <span className="text-zinc-400">Sin fecha</span>}
+                    </Td>
+                    <Td className="text-zinc-600">{session.instructor ?? <span className="text-zinc-400">—</span>}</Td>
+                    <Td className="font-semibold text-green-800">{session.attended}</Td>
+                    <Td>{session.excused}</Td>
+                    <Td className={session.absent ? "text-red-700" : undefined}>{session.absent}</Td>
+                    <Td className={session.unmarked ? "font-semibold text-amber-800" : "text-zinc-500"}>{session.unmarked}</Td>
+                    <Td className="text-right">
+                      <LinkButton href={`/admin/cursos/${courseId}/sesion/${session.id}/asistencia`} variant="secondary">
+                        Abrir lista
+                      </LinkButton>
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </TableWrap>
+          </div>
+        </>
+      )}
+
       <h2 className="mb-3 text-xl text-navy">Avance por módulo</h2>
       {report.moduleStats.length === 0 ? (
         <Empty>Este curso no tiene módulos.</Empty>

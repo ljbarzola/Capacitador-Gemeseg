@@ -10,6 +10,7 @@ import { isHttpUrl, toEmbedUrl } from "@/lib/embed";
 import { withFlash } from "@/lib/flash";
 import { bool, int, optStr, str } from "@/lib/form";
 import { getPrisma } from "@/lib/prisma";
+import { parseSessionDate } from "@/lib/sessions";
 import { createUploadUrl, deleteObject, newStoragePath } from "@/lib/storage";
 
 const BASE = "/admin/cursos";
@@ -210,7 +211,7 @@ export async function moveItem(formData: FormData) {
 
 // ───────────── Lecciones ─────────────
 
-const LESSON_TYPES: LessonType[] = ["TEXT", "VIDEO_EMBED", "VIDEO_UPLOAD", "IMAGE", "LINK", "FILE"];
+const LESSON_TYPES: LessonType[] = ["TEXT", "VIDEO_EMBED", "VIDEO_UPLOAD", "IMAGE", "LINK", "FILE", "SESSION"];
 
 export async function saveLesson(formData: FormData) {
   const actor = await requireStaff();
@@ -237,7 +238,9 @@ export async function saveLesson(formData: FormData) {
     url: string | null;
     storagePath: string | null;
     fileName: string | null;
-  } = { title, type, body: null, url: null, storagePath: null, fileName: null };
+    startsAt: Date | null;
+    instructorId: string | null;
+  } = { title, type, body: null, url: null, storagePath: null, fileName: null, startsAt: null, instructorId: null };
 
   switch (type) {
     case "TEXT":
@@ -268,6 +271,25 @@ export async function saveLesson(formData: FormData) {
       data.storagePath = storagePath;
       data.fileName = fileName || null;
       break;
+    case "SESSION": {
+      // Sesión en vivo: fecha y hora de Ecuador, enlace de la reunión, instructor e indicaciones.
+      const startsAt = parseSessionDate(str(formData, "sessionDate"), str(formData, "sessionTime"));
+      const instructorId = str(formData, "instructorId");
+      if (!startsAt) redirect(withFlash(back, "error", "sesion_invalida"));
+      if (!isHttpUrl(url)) redirect(withFlash(back, "error", "enlace_invalido"));
+      const instructor = instructorId
+        ? await getPrisma().user.findFirst({
+            where: { id: instructorId, active: true, role: { in: ["INSTRUCTOR", "ADMIN"] } },
+            select: { id: true },
+          })
+        : null;
+      if (!instructor) redirect(withFlash(back, "error", "sesion_invalida"));
+      data.startsAt = startsAt;
+      data.instructorId = instructor.id;
+      data.url = url;
+      data.body = body || null;
+      break;
+    }
   }
 
   const prisma = getPrisma();

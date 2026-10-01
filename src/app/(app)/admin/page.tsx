@@ -4,6 +4,7 @@ import {
   IconAward,
   IconBook,
   IconChart,
+  IconCalendar,
   IconCheck,
   IconList,
   IconPlus,
@@ -41,6 +42,7 @@ export default async function AdminHome() {
   const isAdmin = user.role === "ADMIN";
   const actions = [
     { href: "/admin/cursos", title: "Crear o editar cursos", text: "Módulos, lecciones y exámenes.", icon: <IconPlus />, accent: naranja },
+    { href: "/admin/sesiones", title: "Sesiones en vivo", text: "Próximas clases y toma de asistencia.", icon: <IconCalendar />, accent: indigo },
     { href: "/avance", title: "Ver el avance", text: "Por curso, por persona y a Excel.", icon: <IconChart />, accent: turquesa },
     { href: "/admin/grupos", title: "Grupos", text: "Sedes, áreas o empresas.", icon: <IconList />, accent: indigo },
     ...(isAdmin

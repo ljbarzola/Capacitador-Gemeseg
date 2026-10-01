@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { IconAward, IconBook, IconCheck, IconClock, IconFlag } from "@/components/icons";
+import { IconAward, IconBook, IconCalendar, IconCheck, IconClock, IconFlag } from "@/components/icons";
 import { CertBadge } from "@/components/status";
 import { Card, IconChip, LinkButton, SegmentProgress, accentFor } from "@/components/ui";
 import { getCourseAccents } from "@/lib/accents";
 import { certState } from "@/lib/certificates";
 import { isStaff, requireUser } from "@/lib/dal";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatTime } from "@/lib/format";
 import { getPrisma } from "@/lib/prisma";
 import { getOutline } from "@/lib/progress";
+import { dayAndMonth, meetingProvider, PHASE_LABEL, relativeDay, SESSION_WINDOW_MS, sessionPhase } from "@/lib/sessions";
+import { Badge } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Mis cursos · Capacitación Gemeseg" };
 
@@ -28,6 +30,26 @@ export default async function PanelPage() {
   });
   const outlines = await Promise.all(enrollments.map((e) => getOutline(e.course.id, user.id)));
   const accents = await getCourseAccents();
+
+  // Próximas sesiones en vivo de sus cursos (incluye las que empezaron hace menos de 2 horas).
+  const sessionsFrom = new Date(new Date().getTime() - SESSION_WINDOW_MS);
+  const upcoming = await getPrisma().lesson.findMany({
+    where: {
+      type: "SESSION",
+      startsAt: { gte: sessionsFrom },
+      submodule: { module: { course: { published: true, enrollments: { some: { userId: user.id } } } } },
+    },
+    orderBy: { startsAt: "asc" },
+    take: 5,
+    select: {
+      id: true,
+      title: true,
+      startsAt: true,
+      url: true,
+      instructor: { select: { firstNames: true, lastNames: true } },
+      submodule: { select: { module: { select: { courseId: true, course: { select: { title: true } } } } } },
+    },
+  });
   const now = new Date();
 
   const cards = enrollments
@@ -94,6 +116,59 @@ export default async function PanelPage() {
         </div>
       </section>
 
+      {upcoming.length > 0 && (
+        <section aria-labelledby="proximas-sesiones" className="enter mb-7" style={{ "--i": 1 } as React.CSSProperties}>
+          <h2 id="proximas-sesiones" className="mb-3 flex items-center gap-2 text-xl text-navy">
+            <IconCalendar className="text-teal-700" /> Próximas sesiones en vivo
+          </h2>
+          <ul className="flex flex-col gap-2.5">
+            {upcoming.map((session) => {
+              const when = session.startsAt!;
+              const { day, month } = dayAndMonth(when);
+              const phase = sessionPhase(when);
+              const rel = relativeDay(when);
+              const courseId = session.submodule.module.courseId;
+              const accent = accents.get(courseId) ?? accentFor(courseId);
+              return (
+                <li key={session.id}>
+                  <Card interactive className="flex flex-wrap items-center gap-x-4 gap-y-3 p-4">
+                    <div className={`flex size-14 shrink-0 flex-col items-center justify-center rounded-lg ${accent.soft} ${accent.text}`} aria-hidden>
+                      <span className="text-xl font-semibold leading-none" style={{ fontStretch: "88%" }}>
+                        {day}
+                      </span>
+                      <span className="mt-0.5 text-xs uppercase">{month}</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="flex flex-wrap items-center gap-2 font-semibold text-navy">
+                        {session.title}
+                        {phase === "live" ? <Badge tone="green">{PHASE_LABEL.live}</Badge> : rel && <Badge tone="amber">{rel}</Badge>}
+                      </p>
+                      <p className="mt-0.5 text-sm text-zinc-600">
+                        {formatTime(when)} · {session.submodule.module.course.title}
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        {meetingProvider(session.url) ?? ""}
+                        {session.instructor ? ` · ${session.instructor.firstNames} ${session.instructor.lastNames}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <LinkButton href={`/cursos/${courseId}/leccion/${session.id}`} variant="secondary">
+                        Ver detalle
+                      </LinkButton>
+                      {session.url && (
+                        <LinkButton href={session.url} target="_blank" rel="noopener noreferrer" prefetch={false} variant={phase === "live" ? "primary" : "dark"}>
+                          Unirme
+                        </LinkButton>
+                      )}
+                    </div>
+                  </Card>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       {cards.length === 0 ? (
         <Card className="enter flex flex-col items-start gap-3 py-8 text-sm text-zinc-700" style={{ "--i": 1 } as React.CSSProperties}>
           {isStaff(user.role) ? (
@@ -132,6 +207,11 @@ export default async function PanelPage() {
                           {enrollment.course.title}
                         </Link>
                       </h2>
+                      {outline?.items.some((i) => i.lessonType === "SESSION") && (
+                        <p className="mt-1.5">
+                          <Badge tone="teal">Incluye sesiones en vivo</Badge>
+                        </p>
+                      )}
                       {enrollment.course.description && (
                         <p className="mt-1.5 line-clamp-2 text-sm text-zinc-600">{enrollment.course.description}</p>
                       )}

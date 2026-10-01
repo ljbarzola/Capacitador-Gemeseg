@@ -19,27 +19,30 @@ enum Role {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  firebaseUid String   @unique
-  email       String   @unique
-  firstNames  String
-  lastNames   String
-  cedula      String   @unique // cédula ecuatoriana (10 dígitos, validada); identifica al guardia y sale en el certificado
-  role        Role     @default(STUDENT)
-  active      Boolean  @default(true)
-  mustChangePassword Boolean @default(false) // cuenta creada por importación: debe cambiar la contraseña inicial
-  extraFields Json? // respuestas a campos configurables (ver RegistrationField)
-  groupId     String?
-  group       Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  firebaseUid        String   @unique
+  email              String   @unique
+  firstNames         String
+  lastNames          String
+  cedula             String   @unique // cédula ecuatoriana (10 dígitos, validada); identifica al guardia y sale en el certificado
+  role               Role     @default(STUDENT)
+  active             Boolean  @default(true)
+  mustChangePassword Boolean  @default(false) // cuenta creada por importación: debe cambiar la contraseña inicial
+  extraFields        Json? // respuestas a campos configurables (ver RegistrationField)
+  groupId            String?
+  group              Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  enrollments    Enrollment[]
-  assignedByMe   Enrollment[]     @relation("AssignedBy")
-  lessonProgress LessonProgress[]
-  quizAttempts   QuizAttempt[]
-  feedback       CourseFeedback[]
-  coursesCreated Course[]
+  enrollments      Enrollment[]
+  assignedByMe     Enrollment[]        @relation("AssignedBy")
+  lessonProgress   LessonProgress[]
+  quizAttempts     QuizAttempt[]
+  feedback         CourseFeedback[]
+  coursesCreated   Course[]
+  sessionsTaught   Lesson[]            @relation("SessionInstructor")
+  attendance       SessionAttendance[]
+  attendanceMarked SessionAttendance[] @relation("AttendanceMarker")
 
   @@index([groupId])
 }
@@ -144,23 +147,53 @@ enum LessonType {
   LINK
   TEXT
   FILE
+  SESSION // sesión en vivo (Meet, Zoom, Teams…) con fecha, hora, enlace e instructor
 }
 
 model Lesson {
-  id          String     @id @default(cuid())
-  submoduleId String
-  submodule   Submodule  @relation(fields: [submoduleId], references: [id], onDelete: Cascade)
-  title       String
-  type        LessonType
-  order       Int
-  body        String? // texto enriquecido (TEXT)
-  url         String? // enlace o embed (LINK, VIDEO_EMBED)
-  storagePath String? // objeto en Cloud Storage (VIDEO_UPLOAD, IMAGE, FILE)
-  fileName    String? // nombre original del archivo subido
+  id           String     @id @default(cuid())
+  submoduleId  String
+  submodule    Submodule  @relation(fields: [submoduleId], references: [id], onDelete: Cascade)
+  title        String
+  type         LessonType
+  order        Int
+  body         String? // texto enriquecido (TEXT)
+  url          String? // enlace o embed (LINK, VIDEO_EMBED)
+  storagePath  String? // objeto en Cloud Storage (VIDEO_UPLOAD, IMAGE, FILE)
+  fileName     String? // nombre original del archivo subido
+  // Sesión en vivo (SESSION): `url` es el enlace de la reunión y `body` las indicaciones.
+  startsAt     DateTime?
+  instructorId String?
+  instructor   User?      @relation("SessionInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
 
-  progress LessonProgress[]
+  progress   LessonProgress[]
+  attendance SessionAttendance[]
 
   @@index([submoduleId])
+  @@index([instructorId])
+}
+
+// ───────────── Asistencia a sesiones en vivo ─────────────
+enum AttendanceStatus {
+  ATTENDED // asistió
+  EXCUSED // ausencia justificada (cuenta como cumplida)
+  ABSENT // no asistió
+}
+
+// "Sin marcar" = no existe la fila. La marca cuenta si es posterior al inicio del ciclo.
+model SessionAttendance {
+  id         String           @id @default(cuid())
+  lessonId   String
+  lesson     Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status     AttendanceStatus
+  markedAt   DateTime         @default(now())
+  markedById String?
+  markedBy   User?            @relation("AttendanceMarker", fields: [markedById], references: [id], onDelete: SetNull)
+
+  @@unique([lessonId, userId])
+  @@index([userId])
 }
 
 // ───────────── Exámenes ─────────────
@@ -228,19 +261,19 @@ enum EnrollmentStatus {
 }
 
 model Enrollment {
-  id           String           @id @default(cuid())
-  userId       String
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId     String
-  course       Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  assignedById String?
-  assignedBy   User?            @relation("AssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
-  status       EnrollmentStatus @default(ASSIGNED)
-  dueAt        DateTime?
-  assignedAt   DateTime         @default(now())
-  completedAt  DateTime?
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId       String
+  course         Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  assignedById   String?
+  assignedBy     User?            @relation("AssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+  status         EnrollmentStatus @default(ASSIGNED)
+  dueAt          DateTime?
+  assignedAt     DateTime         @default(now())
+  completedAt    DateTime?
   // Inicio del ciclo actual: el avance cuenta solo si es posterior. Al recertificar se reinicia.
-  cycleStartedAt DateTime @default(now())
+  cycleStartedAt DateTime         @default(now())
 
   certificates Certificate[]
 

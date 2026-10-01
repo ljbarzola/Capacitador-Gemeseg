@@ -2,6 +2,7 @@ import Link from "next/link";
 import { IconCheck, IconLock, IconQuiz, LessonIcon } from "@/components/icons";
 import { SegmentProgress } from "@/components/ui";
 import { itemHref } from "@/lib/course-links";
+import { formatDateTime } from "@/lib/format";
 import { ItemLink } from "./item-link";
 import type { Outline, OutlineItem } from "@/lib/progress";
 
@@ -64,7 +65,10 @@ export function CourseSidebar({
                   const content = (
                     <>
                       <Marker item={item} />
-                      <span className="text-sm leading-snug">{item.title}</span>
+                      <span className="text-sm leading-snug">
+                        {item.title}
+                        {item.startsAt && <span className="block text-xs font-normal text-zinc-500">{formatDateTime(item.startsAt)}</span>}
+                      </span>
                     </>
                   );
                   return (

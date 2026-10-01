@@ -82,6 +82,7 @@ export async function GET(request: Request) {
     { header: "Estado", key: "status", width: 13 },
     { header: "Avance (%)", key: "percent", width: 11 },
     { header: "Actividades", key: "acts", width: 13 },
+    { header: "Sesiones en vivo cumplidas", key: "sess", width: 22 },
     { header: "Nota media (%)", key: "score", width: 14 },
     { header: "Asignado", key: "assigned", width: 12 },
     { header: "Fecha límite", key: "due", width: 12 },
@@ -104,6 +105,7 @@ export async function GET(request: Request) {
         status: p.overdue ? "Atrasado" : STATUS[p.status],
         percent: p.percent,
         acts: `${p.completed} de ${p.total}`,
+        sess: r.sessions.length ? `${p.sessionsDone} de ${r.sessions.length}` : "",
         score: p.avgScore ?? "",
         assigned: p.assignedAt,
         due: p.dueAt ?? "",
@@ -147,6 +149,34 @@ export async function GET(request: Request) {
     }
   }
   header(quizzes);
+
+  const sessions = workbook.addWorksheet("Sesiones en vivo");
+  sessions.columns = [
+    { header: "Curso", key: "course", width: 40 },
+    { header: "Sesión", key: "session", width: 36 },
+    { header: "Fecha y hora", key: "when", width: 18 },
+    { header: "Instructor", key: "instructor", width: 28 },
+    { header: "Asistieron", key: "attended", width: 12 },
+    { header: "Justificadas", key: "excused", width: 13 },
+    { header: "No asistieron", key: "absent", width: 14 },
+    { header: "Sin marcar", key: "unmarked", width: 12 },
+  ];
+  for (const r of reports) {
+    for (const s of r.sessions) {
+      sessions.addRow({
+        course: r.course.title,
+        session: s.title,
+        when: s.startsAt ?? "",
+        instructor: s.instructor ?? "",
+        attended: s.attended,
+        excused: s.excused,
+        absent: s.absent,
+        unmarked: s.unmarked,
+      });
+    }
+  }
+  sessions.getColumn("when").numFmt = "dd/mm/yyyy hh:mm";
+  header(sessions);
 
   const buffer = await workbook.xlsx.writeBuffer();
   const stamp = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Guayaquil" });

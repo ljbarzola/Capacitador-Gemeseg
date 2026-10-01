@@ -154,6 +154,14 @@ export const IconFlag = (p: SVGProps<SVGSVGElement>) => (
   </Svg>
 );
 
+export const IconCalendar = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <rect x="3.5" y="4.5" width="13" height="12" rx="2" />
+    <path d="M3.5 8.5h13M7 3v3M13 3v3" />
+    <path d="M7.5 12.2l1.7 1.7 3.3-3.3" />
+  </Svg>
+);
+
 // Icono según el tipo de lección.
 export function LessonIcon({ type, ...props }: { type?: string } & SVGProps<SVGSVGElement>) {
   switch (type) {
@@ -166,6 +174,8 @@ export function LessonIcon({ type, ...props }: { type?: string } & SVGProps<SVGS
       return <IconLink {...props} />;
     case "FILE":
       return <IconFile {...props} />;
+    case "SESSION":
+      return <IconCalendar {...props} />;
     default:
       return <IconText {...props} />;
   }

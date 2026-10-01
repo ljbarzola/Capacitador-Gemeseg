@@ -11,6 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           Resumen
         </NavLink>
         <NavLink href="/admin/cursos">Cursos</NavLink>
+        <NavLink href="/admin/sesiones">Sesiones en vivo</NavLink>
         <NavLink href="/admin/grupos">Grupos</NavLink>
         {user.role === "ADMIN" && (
           <>

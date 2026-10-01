@@ -116,7 +116,7 @@ La imagen de producción no incluye el CLI de Prisma. Opciones a evaluar al crea
 - [ ] Secreto `DATABASE_URL`
 - [ ] Firebase Auth habilitado
 - [ ] Bucket de medios
-- [ ] Permisos de cuentas de servicio
-- [ ] Trigger de Cloud Build
+- [x] Permisos de cuentas de servicio
+- [x] Trigger de Cloud Build (`deploy-main`, con la cuenta de Compute)
 - [ ] Mapeo de dominio y DNS (opcional)
 - [ ] Estrategia de migraciones

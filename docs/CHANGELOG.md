@@ -9,7 +9,8 @@
 - Base `capacitador` y usuario `app`; la contraseña se generó al azar y vive **solo** en el secreto `DATABASE_URL` de Secret Manager.
 - Artifact Registry `capacitador` (Docker, `us-east1`) y bucket privado `gs://capacitaciongemeseg-media` (acceso público bloqueado).
 - Permisos de la cuenta de servicio de Compute (la que ejecuta Cloud Run): `cloudsql.client`, acceso al secreto `DATABASE_URL` y `storage.objectAdmin` sobre el bucket.
-- Pendiente: conectar GitHub con Cloud Build, permisos de Cloud Build, primer despliegue, migraciones en producción (el usuario `app` necesitará permiso de creación en el esquema `public`).
+- GitHub conectado a Cloud Build (1.ª generación). Activador `deploy-main`: push a `^main$` ejecuta `cloudbuild.yaml`. En proyectos nuevos hay que indicar la cuenta de servicio del activador; se usa la de Compute (`636310739015-compute@developer.gserviceaccount.com`) con `run.admin`, `artifactregistry.writer`, `logging.logWriter`, `cloudbuild.builds.builder` y `iam.serviceAccountUser` sobre sí misma.
+- Pendiente: primer despliegue y URL `*.run.app` en los dominios autorizados de Firebase; migraciones en producción (el usuario `app` necesitará permiso de creación en el esquema `public`).
 
 ## 2026-09-30 — Sesión 2 (Fase 0, parte local)
 - Stack confirmado; DNI obligatorio y en el certificado ([00-requisitos.md](00-requisitos.md)).

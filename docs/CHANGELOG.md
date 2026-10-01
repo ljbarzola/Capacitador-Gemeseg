@@ -10,7 +10,10 @@
 - Artifact Registry `capacitador` (Docker, `us-east1`) y bucket privado `gs://capacitaciongemeseg-media` (acceso público bloqueado).
 - Permisos de la cuenta de servicio de Compute (la que ejecuta Cloud Run): `cloudsql.client`, acceso al secreto `DATABASE_URL` y `storage.objectAdmin` sobre el bucket.
 - GitHub conectado a Cloud Build (1.ª generación). Activador `deploy-main`: push a `^main$` ejecuta `cloudbuild.yaml`. En proyectos nuevos hay que indicar la cuenta de servicio del activador; se usa la de Compute (`636310739015-compute@developer.gserviceaccount.com`) con `run.admin`, `artifactregistry.writer`, `logging.logWriter`, `cloudbuild.builds.builder` y `iam.serviceAccountUser` sobre sí misma.
-- Pendiente: primer despliegue y URL `*.run.app` en los dominios autorizados de Firebase; migraciones en producción (el usuario `app` necesitará permiso de creación en el esquema `public`).
+- Primer despliegue en Cloud Run: https://capacitador-gemeseg-lshoj7uz4q-ue.a.run.app (`/api/health` responde ok con la base conectada).
+- El usuario `app` pasó a ser dueño de la base `capacitador` (hecho a mano en Cloud SQL Studio como `postgres`; así puede crear tablas en `public`).
+- `cloudbuild.yaml` ahora tiene el paso `migrate`: corre `prisma migrate deploy` con el Cloud SQL Auth Proxy (socket `/cloudsql`) antes de desplegar. Migraciones `init` y `rename_dni_to_cedula` aplicadas en producción.
+- Pendiente: agregar la URL `*.run.app` a los dominios autorizados de Firebase (cuando exista el login).
 
 ## 2026-09-30 — Sesión 2 (Fase 0, parte local)
 - Stack confirmado; DNI obligatorio y en el certificado ([00-requisitos.md](00-requisitos.md)).

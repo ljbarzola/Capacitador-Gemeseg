@@ -100,12 +100,9 @@ gcloud beta run domain-mappings create \
 
 El comando devuelve los registros DNS (normalmente un `CNAME` a `ghs.googlehosted.com`). **Hay que crearlos en el cPanel de `gemeseg.com`.** El certificado SSL lo emite Google automáticamente una vez propagado el DNS.
 
-## 9. Migraciones en producción (pendiente)
+## 9. Migraciones en producción
 
-La imagen de producción no incluye el CLI de Prisma. Opciones a evaluar al crear la instancia:
-
-- Paso en Cloud Build que ejecute `prisma migrate deploy` con el Cloud SQL Auth Proxy.
-- Un *Cloud Run Job* con una imagen que sí incluya `prisma`.
+Resueltas: el paso `migrate` de `cloudbuild.yaml` ejecuta `prisma migrate deploy` antes de cada despliegue, usando el Cloud SQL Auth Proxy sobre el socket `/cloudsql` y el secreto `DATABASE_URL`. Requisito único: el usuario `app` debe ser dueño de la base (`ALTER DATABASE capacitador OWNER TO app;`, ejecutado una vez como `postgres`). Las migraciones deben ser compatibles hacia atrás, porque corren antes de que la nueva versión reciba tráfico.
 
 ## Checklist
 
@@ -119,4 +116,4 @@ La imagen de producción no incluye el CLI de Prisma. Opciones a evaluar al crea
 - [x] Permisos de cuentas de servicio
 - [x] Trigger de Cloud Build (`deploy-main`, con la cuenta de Compute)
 - [ ] Mapeo de dominio y DNS (opcional)
-- [ ] Estrategia de migraciones
+- [x] Estrategia de migraciones (paso `migrate` en `cloudbuild.yaml`)

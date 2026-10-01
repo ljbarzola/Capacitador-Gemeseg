@@ -35,9 +35,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const sessionCookie = await auth.createSessionCookie(idToken, {
-    expiresIn: SESSION_MAX_AGE_MS,
-  });
+  let sessionCookie: string;
+  try {
+    sessionCookie = await auth.createSessionCookie(idToken, {
+      expiresIn: SESSION_MAX_AGE_MS,
+    });
+  } catch {
+    // Token revocado (p. ej. tras cerrar sesión) o vencido.
+    return Response.json({ message: "Sesión no válida." }, { status: 401 });
+  }
   await setSessionCookie(sessionCookie);
   return Response.json({ ok: true });
 }

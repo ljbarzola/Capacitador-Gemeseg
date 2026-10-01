@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-01 — Sesión 2 (Fase 1: registro e inicio de sesión)
+- Registro, inicio de sesión, recuperación de contraseña, aviso de correo sin verificar, panel protegido (`/panel`) y cierre de sesión. Firebase Auth en el navegador; el servidor intercambia el ID token por una cookie de sesión `httpOnly` de Firebase (7 días) y la verifica en `src/lib/dal.ts`. `src/proxy.ts` solo hace la comprobación optimista de cookie.
+- `POST /api/auth/register` crea la cuenta con Firebase Admin y el usuario en la base (rol `STUDENT`); si falla la base, borra la cuenta de Firebase para no dejarla huérfana.
+- Decisión del usuario: **la validación del dígito verificador de la cédula queda desactivada por ahora** (`VALIDATE_CEDULA = false` en `src/lib/validation/auth.ts`). El campo sigue siendo obligatorio, único y sale en el certificado; se acepta cualquier documento de 5 a 20 letras o números. El validador módulo 10 de `src/lib/cedula.ts` se conserva para activarlo después.
+- La config pública de Firebase (`NEXT_PUBLIC_*`) se incrusta al compilar: se pasa como `--build-arg` desde sustituciones del activador `deploy-main` (no están en el repositorio).
+- La cuenta de Compute recibió `roles/firebaseauth.admin` (crear usuarios y emitir cookies de sesión).
+- Probado en producción: registro, cédula duplicada, sesión, panel y cierre de sesión. Usuarios de prueba borrados.
+- Para desarrollo local con Firebase Admin hace falta `gcloud auth application-default login` con la cuenta del proyecto y `GOOGLE_CLOUD_QUOTA_PROJECT=capacitaciongemeseg` en `.env`.
+
 ## 2026-09-30 — Sesión 2 (Fase 0, infraestructura GCP, paso a paso con el usuario)
 - Proyecto GCP `capacitaciongemeseg` creado por el usuario. Había llegado al límite de 5 proyectos por cuenta de facturación; se liberó cupo quitando la facturación a un "Default Gemini Project" sin uso detectado, y se vinculó el proyecto nuevo.
 - APIs habilitadas: Cloud Run, Cloud SQL Admin, Cloud Build, Artifact Registry, Secret Manager, Cloud Storage, Identity Toolkit y Firebase.

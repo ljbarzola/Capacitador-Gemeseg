@@ -73,7 +73,7 @@ export default async function LessonPage({
                 <IconCalendar className="mt-0.5 text-teal-700" />
                 <div>
                   <dt className="text-sm text-zinc-600">Fecha</dt>
-                  <dd className="mt-0.5 font-medium capitalize text-navy">{lesson.startsAt ? formatLongDate(lesson.startsAt) : "Por definir"}</dd>
+                  <dd className="mt-0.5 font-medium text-navy first-letter:uppercase">{lesson.startsAt ? formatLongDate(lesson.startsAt) : "Por definir"}</dd>
                 </div>
               </div>
               <div className="flex items-start gap-2.5">

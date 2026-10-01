@@ -29,7 +29,8 @@ export async function completeLesson(formData: FormData) {
     await getPrisma().lessonProgress.upsert({
       where: { userId_lessonId: { userId, lessonId } },
       create: { userId, lessonId },
-      update: {},
+      // Al repetir una lección en un nuevo ciclo (recertificación) se actualiza la fecha.
+      update: { completedAt: new Date() },
     });
     await syncEnrollment(userId, courseId);
   }

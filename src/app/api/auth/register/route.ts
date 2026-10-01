@@ -1,6 +1,8 @@
 import * as z from "zod";
+import { audit } from "@/lib/audit";
 import { getAdminAuth } from "@/lib/firebase/admin";
 import { getPrisma } from "@/lib/prisma";
+import { getActiveFields, validateExtra } from "@/lib/registration-fields";
 import { registerSchema } from "@/lib/validation/auth";
 
 // Crea la cuenta en Firebase y el usuario en la base, validando antes la cédula y que
@@ -12,6 +14,13 @@ export async function POST(request: Request) {
     return Response.json({ errors: z.flattenError(parsed.error).fieldErrors }, { status: 400 });
   }
   const { firstNames, lastNames, cedula, email, password } = parsed.data;
+
+  // Campos adicionales configurados por el administrador.
+  const extraRaw = (body as { extra?: Record<string, unknown> } | null)?.extra;
+  const extra = validateExtra(await getActiveFields(), extraRaw);
+  if (Object.keys(extra.errors).length > 0) {
+    return Response.json({ errors: { extra: extra.errors } }, { status: 400 });
+  }
 
   const prisma = getPrisma();
   const existing = await prisma.user.findFirst({
@@ -47,8 +56,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    await prisma.user.create({
-      data: { firebaseUid: uid, email, firstNames, lastNames, cedula },
+    const created = await prisma.user.create({
+      data: { firebaseUid: uid, email, firstNames, lastNames, cedula, extraFields: extra.values },
+      select: { id: true },
+    });
+    await audit({ id: created.id, firstNames, lastNames }, "usuario.registro", `${firstNames} ${lastNames} se registró (${email})`, {
+      entity: "usuario",
+      entityId: created.id,
     });
   } catch (error) {
     // Evita una cuenta de Firebase huérfana sin usuario en la base.

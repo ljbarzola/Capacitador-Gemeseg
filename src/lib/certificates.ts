@@ -1,5 +1,6 @@
 import "server-only";
 import { randomInt } from "node:crypto";
+import { audit } from "@/lib/audit";
 import { getPrisma } from "@/lib/prisma";
 
 // Certificados: se emiten solos al completar un curso y se descargan en la plataforma (PDF).
@@ -61,7 +62,7 @@ export async function issueCertificate(enrollmentId: string) {
   const issuedAt = new Date();
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
-      return await prisma.certificate.create({
+      const created = await prisma.certificate.create({
         data: {
           code: newCertificateCode(),
           enrollmentId,
@@ -72,6 +73,11 @@ export async function issueCertificate(enrollmentId: string) {
           expiresAt: enrollment.course.recertMonths ? addMonths(issuedAt, enrollment.course.recertMonths) : null,
         },
       });
+      await audit(null, "certificado.emitir", `Certificado ${created.code} emitido a ${created.holderName} por «${created.courseTitle}»`, {
+        entity: "certificado",
+        entityId: created.id,
+      });
+      return created;
     } catch (error) {
       if ((error as { code?: string }).code !== "P2002") throw error; // código repetido: reintentar
     }

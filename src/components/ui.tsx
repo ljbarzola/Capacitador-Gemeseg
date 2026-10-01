@@ -38,7 +38,7 @@ export function Card({
 }
 
 const button = {
-  primary: "bg-brand text-white hover:bg-[#d6341a] active:bg-[#bd2d16]",
+  primary: "bg-[#d6341a] text-white hover:bg-[#bd2d16] active:bg-[#a52712]",
   secondary: "border border-zinc-300 bg-white text-navy hover:border-zinc-400 hover:bg-zinc-50",
   danger: "border border-red-200 bg-white text-red-700 hover:border-red-300 hover:bg-red-50",
   ghost: "text-navy hover:bg-zinc-100",

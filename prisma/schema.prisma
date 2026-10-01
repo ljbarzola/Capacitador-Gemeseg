@@ -27,6 +27,7 @@ model User {
   cedula      String   @unique // cédula ecuatoriana (10 dígitos, validada); identifica al guardia y sale en el certificado
   role        Role     @default(STUDENT)
   active      Boolean  @default(true)
+  mustChangePassword Boolean @default(false) // cuenta creada por importación: debe cambiar la contraseña inicial
   extraFields Json? // respuestas a campos configurables (ver RegistrationField)
   groupId     String?
   group       Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
@@ -50,14 +51,40 @@ model Group {
   users User[]
 }
 
-// Campos adicionales de registro configurables desde el panel.
+enum FieldType {
+  TEXT
+  SELECT
+}
+
+// Campos adicionales de registro configurables desde el panel. Las respuestas se guardan en
+// User.extraFields con la clave `key` (no cambia aunque se renombre la etiqueta).
 model RegistrationField {
-  id       String  @id @default(cuid())
-  key      String  @unique
+  id       String    @id @default(cuid())
+  key      String    @unique
   label    String
-  required Boolean @default(false)
-  order    Int     @default(0)
-  active   Boolean @default(true)
+  type     FieldType @default(TEXT)
+  options  String[]  @default([]) // opciones de una lista (SELECT)
+  required Boolean   @default(false)
+  order    Int       @default(0)
+  active   Boolean   @default(true)
+}
+
+// Registro de acciones de gestión (quién hizo qué y cuándo). Sin relaciones para conservarlo
+// aunque se borren usuarios o cursos.
+model AuditLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  actorId   String?
+  actorName String
+  action    String // p. ej. "usuario.rol", "curso.eliminar"
+  entity    String? // tipo de objeto afectado
+  entityId  String?
+  summary   String
+  meta      Json?
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([action])
 }
 
 // ───────────── Contenido ─────────────

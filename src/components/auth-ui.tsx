@@ -47,7 +47,7 @@ export function AuthCard({
   return (
     <div className="flex flex-1 flex-col lg:flex-row">
       <BrandPanel />
-      <main className="flex flex-1 flex-col items-center justify-center gap-5 px-5 py-10 sm:py-14">
+      <main id="contenido" className="flex flex-1 flex-col items-center justify-center gap-5 px-5 py-10 sm:py-14">
         <div className="w-full max-w-md">
           <h1 className="text-3xl text-navy">{title}</h1>
           {subtitle && <p className="mt-2 text-[0.95rem] text-zinc-600">{subtitle}</p>}
@@ -99,7 +99,7 @@ export function SubmitButton({
     <button
       type="submit"
       disabled={pending}
-      className="min-h-11 rounded-md bg-brand px-4 py-2.5 font-semibold text-white transition-colors hover:bg-[#d6341a] disabled:opacity-60"
+      className="min-h-11 rounded-md bg-[#d6341a] px-4 py-2.5 font-semibold text-white transition-colors hover:bg-[#bd2d16] disabled:opacity-60"
     >
       {pending ? "Un momento…" : children}
     </button>

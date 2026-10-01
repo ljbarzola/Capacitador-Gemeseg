@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthCard } from "@/components/auth-ui";
+import { getActiveFields } from "@/lib/registration-fields";
 import { RegistroForm } from "./registro-form";
 
 export const metadata: Metadata = { title: "Crear cuenta · Capacitación Gemeseg" };
 
-export default function RegistroPage() {
+// Los campos adicionales los configura el administrador, así que se leen en cada visita.
+export const dynamic = "force-dynamic";
+
+export default async function RegistroPage() {
+  const fields = await getActiveFields().catch(() => []);
+
   return (
     <AuthCard
       title="Crear cuenta"
@@ -13,13 +19,15 @@ export default function RegistroPage() {
       footer={
         <>
           ¿Ya tiene cuenta?{" "}
-          <Link href="/login" className="font-semibold text-brand underline">
+          <Link href="/login" className="font-semibold text-[#c42d12] underline">
             Ingrese
           </Link>
         </>
       }
     >
-      <RegistroForm />
+      <RegistroForm
+        extraFields={fields.map((f) => ({ key: f.key, label: f.label, type: f.type, options: f.options, required: f.required }))}
+      />
     </AuthCard>
   );
 }

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import * as z from "zod";
 import type { LessonType, Progression, QuestionType } from "@/generated/prisma/client";
+import { audit } from "@/lib/audit";
 import { requireStaff } from "@/lib/dal";
 import { isHttpUrl, toEmbedUrl } from "@/lib/embed";
 import { withFlash } from "@/lib/flash";
@@ -13,6 +14,12 @@ import { createUploadUrl, deleteObject, newStoragePath } from "@/lib/storage";
 
 const BASE = "/admin/cursos";
 const editor = (courseId: string) => `${BASE}/${encodeURIComponent(courseId)}`;
+
+// Título del curso para los textos de auditoría.
+async function courseLabel(courseId: string) {
+  const course = await getPrisma().course.findUnique({ where: { id: courseId }, select: { title: true } });
+  return course ? `«${course.title}»` : "un curso";
+}
 
 async function done(courseId: string, code: "guardado" | "creado" | "eliminado" = "guardado"): Promise<never> {
   revalidatePath(editor(courseId), "layout");
@@ -29,39 +36,57 @@ export async function createCourse(formData: FormData) {
     data: { title, createdById: user.id },
     select: { id: true },
   });
+  await audit(user, "curso.crear", `Curso «${title}» creado`, { entity: "curso", entityId: course.id });
   redirect(withFlash(editor(course.id), "ok", "creado"));
 }
 
 export async function updateCourse(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const id = str(formData, "id");
   const title = str(formData, "title").slice(0, 150);
   const progression: Progression = str(formData, "progression") === "SEQUENTIAL" ? "SEQUENTIAL" : "FREE";
   const months = int(formData, "recertMonths");
   if (!id || !title) redirect(BASE);
+  const published = bool(formData, "published");
+  const recertMonths = months !== null && months > 0 && months <= 120 ? months : null;
+  const before = await getPrisma().course.findUnique({
+    where: { id },
+    select: { title: true, published: true, progression: true, recertMonths: true },
+  });
   await getPrisma().course.update({
     where: { id },
     data: {
       title,
       description: optStr(formData, "description")?.slice(0, 4000) ?? null,
       progression,
-      published: bool(formData, "published"),
-      recertMonths: months !== null && months > 0 && months <= 120 ? months : null,
+      published,
+      recertMonths,
     },
+  });
+  const changes: string[] = [];
+  if (before && before.title !== title) changes.push(`título: «${before.title}» → «${title}»`);
+  if (before && before.published !== published) changes.push(published ? "publicado" : "despublicado");
+  if (before && before.progression !== progression) changes.push(`progresión: ${progression === "SEQUENTIAL" ? "secuencial" : "libre"}`);
+  if (before && before.recertMonths !== recertMonths) changes.push(`vigencia: ${recertMonths ? `${recertMonths} meses` : "sin vencimiento"}`);
+  await audit(actor, "curso.actualizar", `Curso «${title}»${changes.length ? `: ${changes.join("; ")}` : ": datos guardados"}`, {
+    entity: "curso",
+    entityId: id,
   });
   await done(id);
 }
 
 export async function deleteCourse(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const id = str(formData, "id");
   if (id) {
+    const label = await courseLabel(id);
     const lessons = await getPrisma().lesson.findMany({
       where: { submodule: { module: { courseId: id } }, storagePath: { not: null } },
       select: { storagePath: true },
     });
     await getPrisma().course.delete({ where: { id } });
     await Promise.all(lessons.map((l) => deleteObject(l.storagePath!)));
+    await audit(actor, "curso.eliminar", `Curso ${label} eliminado con todo su contenido y avance`, { entity: "curso", entityId: id });
   }
   revalidatePath(BASE);
   redirect(withFlash(BASE, "ok", "eliminado"));
@@ -70,54 +95,70 @@ export async function deleteCourse(formData: FormData) {
 // ───────────── Módulos, submódulos y orden ─────────────
 
 export async function addModule(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const courseId = str(formData, "courseId");
   const title = str(formData, "title").slice(0, 150);
   if (!courseId || !title) redirect(editor(courseId));
   const prisma = getPrisma();
   const last = await prisma.module.aggregate({ where: { courseId }, _max: { order: true } });
   await prisma.module.create({ data: { courseId, title, order: (last._max.order ?? -1) + 1 } });
+  await audit(actor, "contenido.crear", `Módulo «${title}» agregado a ${await courseLabel(courseId)}`, { entity: "curso", entityId: courseId });
   await done(courseId, "creado");
 }
 
 export async function updateModule(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const id = str(formData, "id");
   const title = str(formData, "title").slice(0, 150);
-  if (id && title) await getPrisma().module.update({ where: { id }, data: { title } });
+  if (id && title) {
+    await getPrisma().module.update({ where: { id }, data: { title } });
+    await audit(actor, "contenido.actualizar", `Módulo renombrado a «${title}» en ${await courseLabel(str(formData, "courseId"))}`, { entity: "curso", entityId: str(formData, "courseId") });
+  }
   await done(str(formData, "courseId"));
 }
 
 export async function deleteModule(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const id = str(formData, "id");
-  if (id) await removeLessonFiles({ submodule: { moduleId: id } }).then(() => getPrisma().module.delete({ where: { id } }));
+  if (id) {
+    await removeLessonFiles({ submodule: { moduleId: id } });
+    const removed = await getPrisma().module.delete({ where: { id }, select: { title: true } });
+    await audit(actor, "contenido.eliminar", `Módulo «${removed.title}» eliminado de ${await courseLabel(str(formData, "courseId"))}`, { entity: "curso", entityId: str(formData, "courseId") });
+  }
   await done(str(formData, "courseId"), "eliminado");
 }
 
 export async function addSubmodule(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const moduleId = str(formData, "moduleId");
   const title = str(formData, "title").slice(0, 150);
   if (!moduleId || !title) redirect(editor(str(formData, "courseId")));
   const prisma = getPrisma();
   const last = await prisma.submodule.aggregate({ where: { moduleId }, _max: { order: true } });
   await prisma.submodule.create({ data: { moduleId, title, order: (last._max.order ?? -1) + 1 } });
+  await audit(actor, "contenido.crear", `Submódulo «${title}» agregado a ${await courseLabel(str(formData, "courseId"))}`, { entity: "curso", entityId: str(formData, "courseId") });
   await done(str(formData, "courseId"), "creado");
 }
 
 export async function updateSubmodule(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const id = str(formData, "id");
   const title = str(formData, "title").slice(0, 150);
-  if (id && title) await getPrisma().submodule.update({ where: { id }, data: { title } });
+  if (id && title) {
+    await getPrisma().submodule.update({ where: { id }, data: { title } });
+    await audit(actor, "contenido.actualizar", `Submódulo renombrado a «${title}» en ${await courseLabel(str(formData, "courseId"))}`, { entity: "curso", entityId: str(formData, "courseId") });
+  }
   await done(str(formData, "courseId"));
 }
 
 export async function deleteSubmodule(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const id = str(formData, "id");
-  if (id) await removeLessonFiles({ submoduleId: id }).then(() => getPrisma().submodule.delete({ where: { id } }));
+  if (id) {
+    await removeLessonFiles({ submoduleId: id });
+    const removed = await getPrisma().submodule.delete({ where: { id }, select: { title: true } });
+    await audit(actor, "contenido.eliminar", `Submódulo «${removed.title}» eliminado de ${await courseLabel(str(formData, "courseId"))}`, { entity: "curso", entityId: str(formData, "courseId") });
+  }
   await done(str(formData, "courseId"), "eliminado");
 }
 
@@ -172,7 +213,7 @@ export async function moveItem(formData: FormData) {
 const LESSON_TYPES: LessonType[] = ["TEXT", "VIDEO_EMBED", "VIDEO_UPLOAD", "IMAGE", "LINK", "FILE"];
 
 export async function saveLesson(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const courseId = str(formData, "courseId");
   const lessonId = str(formData, "lessonId");
   const submoduleId = str(formData, "submoduleId");
@@ -234,21 +275,24 @@ export async function saveLesson(formData: FormData) {
     const previous = await prisma.lesson.findUnique({ where: { id: lessonId }, select: { storagePath: true } });
     await prisma.lesson.update({ where: { id: lessonId }, data });
     if (previous?.storagePath && previous.storagePath !== data.storagePath) await deleteObject(previous.storagePath);
+    await audit(actor, "contenido.actualizar", `Lección «${title}» modificada en ${await courseLabel(courseId)}`, { entity: "curso", entityId: courseId });
     await done(courseId);
   }
 
   if (!submoduleId) redirect(editor(courseId));
   const last = await prisma.lesson.aggregate({ where: { submoduleId }, _max: { order: true } });
   await prisma.lesson.create({ data: { ...data, submoduleId, order: (last._max.order ?? -1) + 1 } });
+  await audit(actor, "contenido.crear", `Lección «${title}» agregada a ${await courseLabel(courseId)}`, { entity: "curso", entityId: courseId });
   await done(courseId, "creado");
 }
 
 export async function deleteLesson(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const id = str(formData, "id");
   if (id) {
-    const lesson = await getPrisma().lesson.delete({ where: { id }, select: { storagePath: true } });
+    const lesson = await getPrisma().lesson.delete({ where: { id }, select: { storagePath: true, title: true } });
     if (lesson.storagePath) await deleteObject(lesson.storagePath);
+    await audit(actor, "contenido.eliminar", `Lección «${lesson.title}» eliminada de ${await courseLabel(str(formData, "courseId"))}`, { entity: "curso", entityId: str(formData, "courseId") });
   }
   await done(str(formData, "courseId"), "eliminado");
 }
@@ -290,7 +334,7 @@ export async function requestUpload(input: {
 // ───────────── Examen ─────────────
 
 export async function saveQuizSettings(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const courseId = str(formData, "courseId");
   const submoduleId = str(formData, "submoduleId");
   const passing = int(formData, "passingScore");
@@ -306,14 +350,16 @@ export async function saveQuizSettings(formData: FormData) {
     create: { submoduleId, ...data },
     update: data,
   });
+  await audit(actor, "examen.configurar", `Examen de ${await courseLabel(courseId)}: nota mínima ${data.passingScore}%, ${data.maxAttempts ? `${data.maxAttempts} intento(s)` : "intentos ilimitados"}`, { entity: "curso", entityId: courseId });
   revalidatePath(`${editor(courseId)}/examen/${submoduleId}`);
   redirect(withFlash(`${editor(courseId)}/examen/${submoduleId}`, "ok", "guardado"));
 }
 
 export async function deleteQuiz(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const submoduleId = str(formData, "submoduleId");
   await getPrisma().quiz.deleteMany({ where: { submoduleId } });
+  await audit(actor, "examen.eliminar", `Examen eliminado de ${await courseLabel(str(formData, "courseId"))}`, { entity: "curso", entityId: str(formData, "courseId") });
   await done(str(formData, "courseId"), "eliminado");
 }
 
@@ -334,7 +380,7 @@ const questionSchema = z
   });
 
 export async function saveQuestion(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const courseId = str(formData, "courseId");
   const submoduleId = str(formData, "submoduleId");
   const questionId = str(formData, "questionId");
@@ -373,15 +419,19 @@ export async function saveQuestion(formData: FormData) {
       },
     });
   }
+  await audit(actor, "pregunta.guardar", `Pregunta ${questionId ? "modificada" : "agregada"} en ${await courseLabel(courseId)}: «${text.slice(0, 80)}»`, { entity: "curso", entityId: courseId });
   revalidatePath(back);
   redirect(withFlash(back, "ok", questionId ? "guardado" : "creado"));
 }
 
 export async function deleteQuestion(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const id = str(formData, "id");
   const back = `${editor(str(formData, "courseId"))}/examen/${str(formData, "submoduleId")}`;
-  if (id) await getPrisma().question.deleteMany({ where: { id } });
+  if (id) {
+    await getPrisma().question.deleteMany({ where: { id } });
+    await audit(actor, "pregunta.eliminar", `Pregunta eliminada de ${await courseLabel(str(formData, "courseId"))}`, { entity: "curso", entityId: str(formData, "courseId") });
+  }
   revalidatePath(back);
   redirect(withFlash(back, "ok", "eliminado"));
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { audit } from "@/lib/audit";
 import { certState, startRecertification } from "@/lib/certificates";
 import { itemHref } from "@/lib/course-links";
 import { getCourseAccess } from "@/lib/dal";
@@ -108,7 +109,7 @@ export async function submitFeedback(formData: FormData) {
 // Inicia un nuevo ciclo de certificación cuando el certificado está por vencer o ya venció.
 export async function restartCertification(formData: FormData) {
   const courseId = field(formData, "courseId");
-  const { enrollment } = await getCourseAccess(courseId);
+  const { user, enrollment } = await getCourseAccess(courseId);
   if (!enrollment) redirect(`/cursos/${courseId}`);
 
   const latest = await getPrisma().certificate.findFirst({
@@ -119,6 +120,11 @@ export async function restartCertification(formData: FormData) {
   const state = latest ? certState(latest.expiresAt) : null;
   if (state === "expired" || state === "expiring") {
     await startRecertification(enrollment.id);
+    const course = await getPrisma().course.findUnique({ where: { id: courseId }, select: { title: true } });
+    await audit(user, "certificado.renovar", `${user.firstNames} ${user.lastNames} inició la recertificación de «${course?.title}»`, {
+      entity: "curso",
+      entityId: courseId,
+    });
   }
   redirect(`/cursos/${courseId}`);
 }

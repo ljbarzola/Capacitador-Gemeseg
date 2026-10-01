@@ -69,6 +69,7 @@ steps:
       - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
       - --region=${_REGION}
       - --platform=managed
+      - --cpu-boost
       - --allow-unauthenticated
       - --add-cloudsql-instances=${_SQL_INSTANCE}
       - --set-secrets=DATABASE_URL=DATABASE_URL:latest

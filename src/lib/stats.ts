@@ -13,6 +13,7 @@ export type PersonRow = {
   email: string;
   cedula: string;
   group: string | null;
+  extra: Record<string, string>;
   status: EnrollmentStatus;
   assignedAt: Date;
   dueAt: Date | null;
@@ -132,7 +133,14 @@ export async function getCourseReport(
       completedAt: true,
       cycleStartedAt: true,
       user: {
-        select: { firstNames: true, lastNames: true, email: true, cedula: true, group: { select: { name: true } } },
+        select: {
+          firstNames: true,
+          lastNames: true,
+          email: true,
+          cedula: true,
+          extraFields: true,
+          group: { select: { name: true } },
+        },
       },
       certificates: {
         orderBy: { issuedAt: "desc" },
@@ -208,6 +216,7 @@ export async function getCourseReport(
       email: e.user.email,
       cedula: e.user.cedula,
       group: e.user.group?.name ?? null,
+      extra: (e.user.extraFields ?? {}) as Record<string, string>,
       status: e.status,
       assignedAt: e.assignedAt,
       dueAt: e.dueAt,

@@ -12,7 +12,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </NavLink>
         <NavLink href="/admin/cursos">Cursos</NavLink>
         <NavLink href="/admin/grupos">Grupos</NavLink>
-        {user.role === "ADMIN" && <NavLink href="/admin/usuarios">Usuarios</NavLink>}
+        {user.role === "ADMIN" && (
+          <>
+            <NavLink href="/admin/usuarios">Usuarios</NavLink>
+            <NavLink href="/admin/campos">Campos de registro</NavLink>
+            <NavLink href="/admin/auditoria">Auditoría</NavLink>
+          </>
+        )}
       </nav>
       <div>{children}</div>
     </div>

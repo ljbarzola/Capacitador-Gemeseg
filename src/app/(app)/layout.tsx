@@ -2,11 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { NavLink } from "@/components/nav-link";
 import { isStaff, requireUser } from "@/lib/dal";
+import { getActiveFields } from "@/lib/registration-fields";
 import { LogoutButton } from "./panel/logout-button";
 
 // Marco de la zona autenticada: cabecera azul marino con navegación según el rol.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  const answers = (user.extraFields ?? {}) as Record<string, unknown>;
+  const missingProfile = (await getActiveFields()).filter((f) => f.required && !String(answers[f.key] ?? "").trim()).length;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -41,14 +44,28 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             )}
           </nav>
           <div className="ml-auto flex items-center gap-3 pb-2">
-            <span className="hidden max-w-52 truncate text-sm text-white/75 md:inline">
+            <Link href="/perfil" className="hidden max-w-52 truncate text-sm text-white/75 underline-offset-4 hover:text-white hover:underline md:inline">
               {user.firstNames} {user.lastNames}
-            </span>
+            </Link>
             <LogoutButton />
           </div>
         </div>
       </header>
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-7 sm:py-9">{children}</div>
+      {(user.mustChangePassword || missingProfile > 0) && (
+        <div className="border-b border-amber-300 bg-amber-50">
+          <p className="mx-auto w-full max-w-6xl px-4 py-2.5 text-sm text-amber-950">
+            {user.mustChangePassword
+              ? "Por seguridad, cambie la contraseña inicial que le entregaron. "
+              : "Faltan datos obligatorios en su perfil. "}
+            <Link href="/perfil" className="font-semibold underline underline-offset-2">
+              {user.mustChangePassword ? "Cambiar contraseña" : "Completar mi perfil"}
+            </Link>
+          </p>
+        </div>
+      )}
+      <main id="contenido" className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-7 sm:py-9">
+        {children}
+      </main>
     </div>
   );
 }

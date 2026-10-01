@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { audit, type Actor } from "@/lib/audit";
 import { requireStaff } from "@/lib/dal";
 import { withFlash } from "@/lib/flash";
 import { str } from "@/lib/form";
@@ -17,11 +18,17 @@ function parseDue(formData: FormData) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-async function enroll(courseId: string, assignedById: string, userIds: string[], dueAt: Date | null) {
+async function enroll(courseId: string, actor: NonNullable<Actor>, userIds: string[], dueAt: Date | null, how: string) {
   if (userIds.length === 0) redirect(withFlash(page(courseId), "error", "sin_destinatarios"));
   const result = await getPrisma().enrollment.createMany({
-    data: userIds.map((userId) => ({ userId, courseId, assignedById, dueAt })),
+    data: userIds.map((userId) => ({ userId, courseId, assignedById: actor.id, dueAt })),
     skipDuplicates: true, // quien ya estaba inscrito conserva su avance
+  });
+  const course = await getPrisma().course.findUnique({ where: { id: courseId }, select: { title: true } });
+  await audit(actor, "inscripcion.asignar", `«${course?.title}» asignado a ${result.count} persona(s) (${how})${dueAt ? `, límite ${dueAt.toLocaleDateString("es-EC", { timeZone: "America/Guayaquil" })}` : ""}`, {
+    entity: "curso",
+    entityId: courseId,
+    meta: { solicitadas: userIds.length, nuevas: result.count },
   });
   revalidatePath(page(courseId));
   redirect(withFlash(page(courseId), "ok", "asignado", result.count));
@@ -40,7 +47,7 @@ export async function assignBulk(formData: FormData) {
     where: { active: true, role: "STUDENT", ...(target === "ALL" ? {} : { groupId: target }) },
     select: { id: true },
   });
-  await enroll(courseId, staff.id, users.map((u) => u.id), parseDue(formData));
+  await enroll(courseId, staff, users.map((u) => u.id), parseDue(formData), target === "ALL" ? "todos los estudiantes" : "grupo");
 }
 
 export async function assignPeople(formData: FormData) {
@@ -52,14 +59,26 @@ export async function assignPeople(formData: FormData) {
     where: { id: { in: ids }, active: true },
     select: { id: true },
   });
-  await enroll(courseId, staff.id, users.map((u) => u.id), parseDue(formData));
+  await enroll(courseId, staff, users.map((u) => u.id), parseDue(formData), "selección manual");
 }
 
 export async function removeEnrollment(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const courseId = str(formData, "courseId");
   const id = str(formData, "id");
-  if (id) await getPrisma().enrollment.deleteMany({ where: { id, courseId } });
+  if (id) {
+    const enrollment = await getPrisma().enrollment.findFirst({
+      where: { id, courseId },
+      select: { user: { select: { firstNames: true, lastNames: true } }, course: { select: { title: true } } },
+    });
+    await getPrisma().enrollment.deleteMany({ where: { id, courseId } });
+    if (enrollment) {
+      await audit(actor, "inscripcion.quitar", `${enrollment.user.firstNames} ${enrollment.user.lastNames} fue quitado de «${enrollment.course.title}»`, {
+        entity: "curso",
+        entityId: courseId,
+      });
+    }
+  }
   revalidatePath(page(courseId));
   redirect(withFlash(page(courseId), "ok", "quitado"));
 }

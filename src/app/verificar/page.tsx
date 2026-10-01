@@ -18,7 +18,7 @@ export default async function VerifyIndex({
   return (
     <div className="flex flex-1 flex-col lg:flex-row">
       <BrandPanel compact />
-      <main className="flex flex-1 items-center justify-center px-5 py-12">
+      <main id="contenido" className="flex flex-1 items-center justify-center px-5 py-12">
         <form className="w-full max-w-md" action="/verificar">
           <h1 className="text-3xl text-navy">Verificar un certificado</h1>
           <p className="mt-3 text-[0.95rem] leading-relaxed text-zinc-600">

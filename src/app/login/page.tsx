@@ -13,7 +13,7 @@ export default function LoginPage() {
       footer={
         <>
           ¿Aún no tiene cuenta?{" "}
-          <Link href="/registro" className="font-semibold text-brand underline">
+          <Link href="/registro" className="font-semibold text-[#c42d12] underline">
             Regístrese
           </Link>
         </>

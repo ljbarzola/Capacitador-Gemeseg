@@ -26,7 +26,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
   return (
     <div className="flex flex-1 flex-col lg:flex-row">
       <BrandPanel compact />
-      <main className="flex flex-1 items-center justify-center px-5 py-12">
+      <main id="contenido" className="flex flex-1 items-center justify-center px-5 py-12">
         <div className="w-full max-w-lg">
           {cert ? (
             <>
@@ -67,7 +67,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
             </>
           )}
           <p className="mt-8 text-sm">
-            <Link href="/verificar" className="font-semibold text-brand underline">
+            <Link href="/verificar" className="font-semibold text-[#c42d12] underline">
               Verificar otro certificado
             </Link>
           </p>

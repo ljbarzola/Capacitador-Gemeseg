@@ -31,6 +31,8 @@ export const getSessionUser = cache(async () => {
       cedula: true,
       role: true,
       active: true,
+      mustChangePassword: true,
+      extraFields: true,
     },
   });
   if (!user || !user.active) return null;

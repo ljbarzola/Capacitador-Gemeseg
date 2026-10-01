@@ -11,7 +11,7 @@ export default function RecuperarPage() {
       title="Recuperar contraseña"
       subtitle="Le enviaremos un enlace a su correo."
       footer={
-        <Link href="/login" className="font-semibold text-brand underline">
+        <Link href="/login" className="font-semibold text-[#c42d12] underline">
           Volver a ingresar
         </Link>
       }

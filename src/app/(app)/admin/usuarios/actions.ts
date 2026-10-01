@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { audit } from "@/lib/audit";
 import { requireRole } from "@/lib/dal";
 import { bool, optStr, str } from "@/lib/form";
 import { withFlash } from "@/lib/flash";
@@ -22,7 +23,10 @@ export async function updateUser(formData: FormData) {
   if (!id || !role) redirect(safeBack);
 
   const prisma = getPrisma();
-  const target = await prisma.user.findUnique({ where: { id }, select: { role: true, active: true } });
+  const target = await prisma.user.findUnique({
+    where: { id },
+    select: { role: true, active: true, groupId: true, firstNames: true, lastNames: true, group: { select: { name: true } } },
+  });
   if (!target) redirect(safeBack);
 
   if (id === admin.id && (role !== target.role || active !== target.active)) {
@@ -36,10 +40,23 @@ export async function updateUser(formData: FormData) {
     if (others === 0) redirect(withFlash(safeBack, "error", "sin_ultimo_admin"));
   }
 
+  const newGroup = groupId ? await prisma.group.findUnique({ where: { id: groupId }, select: { id: true, name: true } }) : null;
   await prisma.user.update({
     where: { id },
-    data: { role, active, groupId: groupId && (await prisma.group.findUnique({ where: { id: groupId } })) ? groupId : null },
+    data: { role, active, groupId: newGroup?.id ?? null },
   });
+
+  const ROLE_LABEL = { STUDENT: "Estudiante", INSTRUCTOR: "Instructor", ADMIN: "Administrador" } as const;
+  const changes: string[] = [];
+  if (role !== target.role) changes.push(`rol: ${ROLE_LABEL[target.role]} → ${ROLE_LABEL[role]}`);
+  if (active !== target.active) changes.push(active ? "cuenta activada" : "cuenta desactivada");
+  if ((newGroup?.id ?? null) !== target.groupId) changes.push(`grupo: ${target.group?.name ?? "ninguno"} → ${newGroup?.name ?? "ninguno"}`);
+  if (changes.length) {
+    await audit(admin, "usuario.actualizar", `${target.firstNames} ${target.lastNames}: ${changes.join("; ")}`, {
+      entity: "usuario",
+      entityId: id,
+    });
+  }
   revalidatePath("/admin/usuarios");
   redirect(withFlash(safeBack, "ok", "guardado"));
 }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { audit } from "@/lib/audit";
 import { requireStaff } from "@/lib/dal";
 import { str } from "@/lib/form";
 import { withFlash } from "@/lib/flash";
@@ -14,7 +15,7 @@ function isUniqueViolation(error: unknown) {
 }
 
 export async function createGroup(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const name = str(formData, "name").slice(0, 80);
   if (!name) redirect(PATH);
   try {
@@ -23,12 +24,13 @@ export async function createGroup(formData: FormData) {
     if (isUniqueViolation(error)) redirect(withFlash(PATH, "error", "grupo_duplicado"));
     throw error;
   }
+  await audit(actor, "grupo.crear", `Grupo «${name}»`, { entity: "grupo" });
   revalidatePath(PATH);
   redirect(withFlash(PATH, "ok", "creado"));
 }
 
 export async function renameGroup(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const id = str(formData, "id");
   const name = str(formData, "name").slice(0, 80);
   if (!id || !name) redirect(PATH);
@@ -38,14 +40,18 @@ export async function renameGroup(formData: FormData) {
     if (isUniqueViolation(error)) redirect(withFlash(PATH, "error", "grupo_duplicado"));
     throw error;
   }
+  await audit(actor, "grupo.renombrar", `Grupo renombrado a «${name}»`, { entity: "grupo", entityId: id });
   revalidatePath(PATH);
   redirect(withFlash(PATH, "ok", "guardado"));
 }
 
 export async function deleteGroup(formData: FormData) {
-  await requireStaff();
+  const actor = await requireStaff();
   const id = str(formData, "id");
-  if (id) await getPrisma().group.delete({ where: { id } }); // los usuarios quedan sin grupo
+  if (id) {
+    const group = await getPrisma().group.delete({ where: { id }, select: { name: true } }); // los usuarios quedan sin grupo
+    await audit(actor, "grupo.eliminar", `Grupo «${group.name}»`, { entity: "grupo", entityId: id });
+  }
   revalidatePath(PATH);
   redirect(withFlash(PATH, "ok", "eliminado"));
 }

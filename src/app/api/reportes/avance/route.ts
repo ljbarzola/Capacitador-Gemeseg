@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import { CERT_STATE_LABEL } from "@/lib/certificates";
 import { getSessionUser, isStaff } from "@/lib/dal";
+import { getActiveFields } from "@/lib/registration-fields";
 import { getAllReports, getCourseReport, type CourseReport } from "@/lib/stats";
 
 // Reporte de avance en Excel (solo personal). ?curso=<id> limita a un curso; ?grupo=<id> filtra por grupo.
@@ -33,6 +34,7 @@ export async function GET(request: Request) {
     reports = await getAllReports({ groupId });
   }
 
+  const extraFields = await getActiveFields();
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Capacitación Gemeseg";
   workbook.created = new Date();
@@ -89,6 +91,7 @@ export async function GET(request: Request) {
     { header: "Estado del certificado", key: "certState", width: 22 },
     { header: "Emitido", key: "issued", width: 12 },
     { header: "Vence", key: "expires", width: 12 },
+    ...extraFields.map((f) => ({ header: f.label, key: `extra_${f.key}`, width: 20 })),
   ];
   for (const r of reports) {
     for (const p of r.people) {
@@ -110,6 +113,7 @@ export async function GET(request: Request) {
         certState: p.cert ? CERT_STATE_LABEL[p.cert.state] : "",
         issued: p.cert?.issuedAt ?? "",
         expires: p.cert?.expiresAt ?? (p.cert ? "Sin vencimiento" : ""),
+        ...Object.fromEntries(extraFields.map((f) => [`extra_${f.key}`, p.extra[f.key] ?? ""])),
       });
     }
   }

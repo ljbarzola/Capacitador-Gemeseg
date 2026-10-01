@@ -73,7 +73,15 @@ export default async function UsersPage({
 
   return (
     <>
-      <PageHeader title="Usuarios" subtitle={`${total} persona(s) encontradas.`} />
+      <PageHeader
+        title="Usuarios"
+        subtitle={`${total} persona(s) encontradas.`}
+        actions={
+          <LinkButton href="/admin/usuarios/importar" variant="secondary">
+            Importar desde CSV
+          </LinkButton>
+        }
+      />
       <Flash ok={query.ok} error={query.error} />
       <Card className="mb-6">
         <form className="grid gap-3 sm:grid-cols-[1fr_12rem_12rem_auto]" action="/admin/usuarios">

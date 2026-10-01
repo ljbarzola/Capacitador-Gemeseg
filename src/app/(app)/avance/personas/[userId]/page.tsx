@@ -6,6 +6,7 @@ import { Card, Empty, PageHeader, ProgressBar, SegmentProgress } from "@/compone
 import { requireStaff } from "@/lib/dal";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { getPrisma } from "@/lib/prisma";
+import { getActiveFields } from "@/lib/registration-fields";
 import { getCourseReport } from "@/lib/stats";
 
 export const metadata: Metadata = { title: "Avance de la persona · Capacitación Gemeseg" };
@@ -22,12 +23,15 @@ export default async function PersonProgressPage({ params }: { params: Promise<{
       email: true,
       cedula: true,
       active: true,
+      extraFields: true,
       group: { select: { name: true } },
       enrollments: { orderBy: { assignedAt: "desc" }, select: { courseId: true } },
     },
   });
   if (!user) notFound();
 
+  const fields = await getActiveFields();
+  const extra = (user.extraFields ?? {}) as Record<string, string>;
   const reports = (await Promise.all(user.enrollments.map((e) => getCourseReport(e.courseId, { userId })))).filter(
     (r) => r !== null,
   );
@@ -44,6 +48,7 @@ export default async function PersonProgressPage({ params }: { params: Promise<{
             / persona · {user.email} · Cédula {user.cedula}
             {user.group ? ` · ${user.group.name}` : ""}
             {!user.active && " · Cuenta desactivada"}
+            {fields.filter((f) => extra[f.key]).map((f) => ` · ${f.label}: ${extra[f.key]}`)}
           </>
         }
       />

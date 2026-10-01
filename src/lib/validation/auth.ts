@@ -1,6 +1,11 @@
 import * as z from "zod";
 import { isValidCedula, normalizeCedula } from "@/lib/cedula";
 
+// Validación del dígito verificador de la cédula ecuatoriana (src/lib/cedula.ts).
+// Desactivada por ahora: se acepta cualquier documento de 5 a 20 caracteres. Para
+// exigir cédula válida más adelante basta con cambiarla a true.
+export const VALIDATE_CEDULA = false;
+
 // Se usa en el navegador (aviso rápido) y en el servidor (la validación que cuenta).
 
 const name = (label: string) =>
@@ -17,8 +22,13 @@ export const registerSchema = z.object({
   cedula: z
     .string()
     .trim()
-    .refine(isValidCedula, "Cédula ecuatoriana no válida")
-    .transform(normalizeCedula),
+    .transform((value) => normalizeCedula(value).toUpperCase())
+    .pipe(
+      z
+        .string()
+        .regex(/^[A-Z0-9]{5,20}$/, "Documento no válido (5 a 20 letras o números)")
+        .refine((value) => !VALIDATE_CEDULA || isValidCedula(value), "Cédula ecuatoriana no válida"),
+    ),
   email: z.string().trim().toLowerCase().pipe(z.email("Correo electrónico no válido")),
   password: z
     .string()

@@ -94,7 +94,7 @@ model Module {
 
   submodules Submodule[]
 
-  @@unique([courseId, order])
+  @@index([courseId])
 }
 
 model Submodule {
@@ -107,7 +107,7 @@ model Submodule {
   lessons Lesson[]
   quiz    Quiz?
 
-  @@unique([moduleId, order])
+  @@index([moduleId])
 }
 
 enum LessonType {
@@ -129,10 +129,11 @@ model Lesson {
   body        String? // texto enriquecido (TEXT)
   url         String? // enlace o embed (LINK, VIDEO_EMBED)
   storagePath String? // objeto en Cloud Storage (VIDEO_UPLOAD, IMAGE, FILE)
+  fileName    String? // nombre original del archivo subido
 
   progress LessonProgress[]
 
-  @@unique([submoduleId, order])
+  @@index([submoduleId])
 }
 
 // ───────────── Exámenes ─────────────

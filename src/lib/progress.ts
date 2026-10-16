@@ -12,10 +12,11 @@ import { countsAsDone } from "@/lib/sessions";
 // En progresión SECUENCIAL solo es accesible si todos los anteriores están hechos, salvo las
 // sesiones en vivo: siempre son accesibles y nunca bloquean lo que sigue.
 //
-// Además, la persona avanza de un módulo a la vez (en todos los cursos): solo ve y puede abrir el
-// módulo actual, que es el primero que todavía no finalizó. Al terminar sus actividades pulsa
-// «Finalizar módulo» (ModuleCompletion) y pasa al siguiente. Cuando el curso queda completo se
-// habilita el repaso de todos los módulos. En vista previa (userId null) se ve todo libremente.
+// Además, la persona avanza de un módulo a la vez (en todos los cursos). El módulo actual es el
+// primero que todavía no finalizó; al terminar sus actividades pulsa «Finalizar módulo»
+// (ModuleCompletion) y pasa al siguiente. Los módulos finalizados se pueden volver a abrir para
+// repasar; los pendientes que vienen después del actual quedan con candado (`locked`) y no se abren,
+// ni por la lista ni escribiendo la dirección. En vista previa (userId null) todo queda libre.
 
 export type OutlineItem = {
   kind: "lesson" | "quiz";
@@ -41,7 +42,8 @@ export type OutlineModule = {
   finalized: boolean;
   // Finalizado por avance anterior a que existiera el botón: falta guardarlo y certificarlo.
   legacy: boolean;
-  visible: boolean; // se muestra en el índice del curso
+  // Pendiente y posterior al módulo actual: aparece en la lista con candado y no se puede abrir.
+  locked: boolean;
 };
 
 export type Outline = {
@@ -53,8 +55,7 @@ export type Outline = {
     published: boolean;
   };
   modules: OutlineModule[];
-  currentModuleId: string | null; // módulo que se muestra a la persona (null en vista previa)
-  review: boolean; // curso completo: se pueden repasar todos los módulos
+  currentModuleId: string | null; // módulo en el que está la persona (null en vista previa)
   items: OutlineItem[];
   total: number;
   completed: number;
@@ -230,19 +231,24 @@ export async function getOutline(courseId: string, userId: string | null): Promi
 
   const completed = items.filter((i) => i.done).length;
   const complete = items.length > 0 && completed === items.length && states.every((s) => s.finalized);
-  const review = userId !== null && complete;
-  // Módulo que se muestra: el primero sin finalizar; si ya finalizó todos (le faltan solo
-  // sesiones por registrar) se queda en el último con actividades.
+  // Módulo actual: el primero sin finalizar; si ya finalizó todos (le faltan solo sesiones por
+  // registrar) se queda en el último con actividades.
   const firstOpen = states.findIndex((s) => !s.finalized);
   const lastWithItems = [...built.keys()].reverse().find((i) => !states[i].empty) ?? -1;
   const currentIndex = userId === null ? -1 : firstOpen >= 0 ? firstOpen : lastWithItems;
   const currentModuleId = currentIndex >= 0 ? built[currentIndex].id : null;
 
   const modules: OutlineModule[] = built.map((module, index) => {
-    const visible = userId === null || review || index === currentIndex;
-    // Fuera del módulo visible nada se puede abrir (ni por URL).
-    if (!visible) for (const item of itemsOf(module)) item.accessible = false;
-    return { ...module, ...states[index], visible };
+    const state = states[index];
+    const locked = userId !== null && !state.empty && !state.finalized && index !== currentIndex;
+    if (locked) {
+      // Módulo pendiente posterior al actual: nada de él se puede abrir (ni por URL).
+      for (const item of itemsOf(module)) item.accessible = false;
+    } else if (userId !== null && state.finalized) {
+      // Módulo finalizado: se puede repasar completo, aunque otro anterior se haya reabierto.
+      for (const item of itemsOf(module)) item.accessible = true;
+    }
+    return { ...module, ...state, locked };
   });
 
   return {
@@ -255,7 +261,6 @@ export async function getOutline(courseId: string, userId: string | null): Promi
     },
     modules,
     currentModuleId,
-    review,
     items,
     total: items.length,
     completed,

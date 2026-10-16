@@ -1,8 +1,17 @@
 # Changelog
 
+## 2026-10-16 — Los módulos como lista desplegable (ajuste del cambio de abajo)
+- **Lista desplegable de módulos en el índice del curso.** El primer despliegue del día escondía todos los módulos menos el actual y no se podía volver atrás; no gustó. Ahora arriba del índice hay un selector «Módulo» con **todos** los módulos, cada uno con su estado: `✓` finalizado, `●` en curso, `🔒` bloqueado. Debajo se muestra solo el contenido del módulo elegido. Al entrar queda en el módulo actual y, si se abre una actividad de otro módulo, la lista la sigue; tras «Finalizar módulo» pasa sola al siguiente.
+- **Módulos finalizados: se pueden volver a abrir** para repasar (contenido, fichas y examen); el avance y los certificados no se pierden.
+- **Módulos pendientes posteriores al actual: se ven con candado y no se pueden elegir**, ni abrir escribiendo la dirección, hasta finalizar el anterior.
+- **Vista previa del personal:** el mismo selector, sin estados ni candados y sin guardar nada.
+- Si el instructor agrega contenido a un módulo ya finalizado, ese módulo vuelve a ser el actual y los demás módulos finalizados siguen abiertos.
+- Solo pantalla y reglas de acceso (`src/lib/progress.ts`, `module-selector.tsx`, `course-sidebar.tsx`); **sin migración**. El campo `visible` de los módulos se reemplazó por `locked` y se quitó `review`.
+- **Verificado en local:** compilación de producción, tipos y lint; 36 comprobaciones de la lógica contra la BD local con usuarios desechables (se borraron). Sin probar a mano en el navegador el selector.
+
 ## 2026-10-16 — Un módulo a la vez, certificados por módulo y fichas de pregunta y respuesta
-*Probado solo en local; sin desplegar.*
-- **Un módulo a la vez (todos los cursos).** La persona ve en el índice del curso **solo su módulo actual** (el primero que aún no finalizó). Al terminar sus actividades (sea un examen o no) aparece **«Finalizar módulo»** (en el índice, en la página del curso y al final de la lección o del examen). Al pulsarlo el módulo queda finalizado, se emite su certificado y el índice pasa al **siguiente módulo**; el anterior desaparece. Los módulos que no son el actual no se pueden abrir ni escribiendo la dirección. Al finalizar el último módulo el curso queda completo (sigue esperando las sesiones en vivo pendientes). Con el curso completo se habilita el **repaso de todos los módulos**. Las sesiones en vivo no impiden finalizar un módulo (las registra el instructor). Módulos sin actividades se omiten.
+*En producción desde el 2026-10-16 (commit `0399fac`).*
+- **Un módulo a la vez (todos los cursos).** *(Esta primera versión mostraba solo el módulo actual; ver el ajuste de arriba, que lo cambió a una lista desplegable.)* Al terminar sus actividades (sea un examen o no) aparece **«Finalizar módulo»** (en el índice, en la página del curso y al final de la lección o del examen). Al pulsarlo el módulo queda finalizado, se emite su certificado y se pasa al **siguiente módulo**. Al finalizar el último módulo el curso queda completo (sigue esperando las sesiones en vivo pendientes). Las sesiones en vivo no impiden finalizar un módulo (las registra el instructor). Módulos sin actividades se omiten.
 - **Reapertura.** Si el instructor agrega contenido a un módulo ya finalizado, ese módulo se reabre para quien lo había finalizado (así nadie queda atascado en un curso secuencial).
 - **Alumnos que ya venían avanzados (retroactivo).** Sus módulos ya terminados cuentan como finalizados si siguieron con otro módulo o el curso estaba completo; se registran y certifican la primera vez que abren el curso. Los certificados finales ya emitidos no cambian.
 - **Vista previa del personal.** Instructores y administradores no cursan: ven un **selector de módulo** (sigue a la actividad abierta) sin guardar nada.

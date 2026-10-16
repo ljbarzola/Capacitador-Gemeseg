@@ -2,7 +2,7 @@
 
 Plataforma de capacitación en línea de Gemeseg — `capacitacion.gemeseg.com`.
 
-Cursos → módulos → submódulos → lecciones (video, imagen, enlace, texto, archivo) con exámenes por submódulo, asignación de cursos, seguimiento de avance para RR.HH./instructores con exportación a Excel, certificados en PDF con verificación pública y recertificación, **sesiones en vivo (Meet, Zoom, Teams) con asistencia**, campos de registro configurables, importación de usuarios por CSV y auditoría de acciones.
+Cursos → módulos → submódulos → lecciones (video, imagen, enlace, texto, archivo, **fichas de pregunta y respuesta con retroalimentación**) con exámenes por submódulo, **avance de un módulo a la vez («Finalizar módulo»)**, asignación de cursos, seguimiento de avance para RR.HH./instructores con exportación a Excel, **certificados en PDF por módulo y final** con verificación pública y recertificación, **sesiones en vivo (Meet, Zoom, Teams) con asistencia**, campos de registro configurables, importación de usuarios por CSV y auditoría de acciones.
 
 ## Desarrollo local
 

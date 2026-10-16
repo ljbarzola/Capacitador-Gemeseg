@@ -30,6 +30,7 @@ const TYPE_LABEL = {
   LINK: "Enlace",
   FILE: "Archivo",
   SESSION: "Sesión en vivo",
+  CARDS: "Fichas",
 } as const;
 
 function MoveButtons({ kind, id, courseId }: { kind: string; id: string; courseId: string }) {
@@ -86,7 +87,7 @@ export default async function CourseEditorPage({
                   startsAt: true,
                   url: true,
                   instructor: { select: { firstNames: true, lastNames: true } },
-                  _count: { select: { attendance: true } },
+                  _count: { select: { attendance: true, cards: true } },
                 },
               },
               quiz: { select: { id: true, _count: { select: { questions: true } } } },
@@ -166,6 +167,18 @@ export default async function CourseEditorPage({
                 <input type="hidden" name="id" value={module.id} />
                 <input type="hidden" name="courseId" value={course.id} />
                 <Input name="title" defaultValue={module.title} required maxLength={150} aria-label="Título del módulo" />
+                <label
+                  className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm text-navy"
+                  title="Al finalizar este módulo la persona recibe un certificado propio"
+                >
+                  <input
+                    type="checkbox"
+                    name="issuesCertificate"
+                    defaultChecked={module.issuesCertificate}
+                    className="size-4 accent-[#ee3b1b]"
+                  />
+                  Emite certificado
+                </label>
                 <Button type="submit" variant="secondary">
                   Guardar
                 </Button>
@@ -228,7 +241,10 @@ export default async function CourseEditorPage({
                           </span>
                         )}
                       </span>
-                      <Badge tone={lesson.type === "SESSION" ? "teal" : "gray"}>{TYPE_LABEL[lesson.type]}</Badge>
+                      <Badge tone={lesson.type === "SESSION" ? "teal" : "gray"}>
+                        {TYPE_LABEL[lesson.type]}
+                        {lesson.type === "CARDS" ? ` (${lesson._count.cards})` : ""}
+                      </Badge>
                       {lesson.type === "SESSION" && (
                         <LinkButton href={`/admin/cursos/${course.id}/sesion/${lesson.id}/asistencia`} variant="dark">
                           Asistencia{lesson._count.attendance ? ` (${lesson._count.attendance})` : ""}

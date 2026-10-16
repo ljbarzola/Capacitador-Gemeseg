@@ -11,6 +11,8 @@ import { getOutlineCached } from "@/lib/progress";
 import { ATTENDANCE_LABEL, meetingProvider, PHASE_LABEL, sessionPhase } from "@/lib/sessions";
 import { createReadUrl } from "@/lib/storage";
 import { completeLesson } from "../../actions";
+import { FinishModuleForm } from "../../finish-module-form";
+import { CardsPlayer } from "./cards-player";
 
 export const metadata: Metadata = { title: "Lección · Capacitación Gemeseg" };
 
@@ -40,9 +42,24 @@ export default async function LessonPage({
       fileName: true,
       startsAt: true,
       instructor: { select: { firstNames: true, lastNames: true } },
+      // Nunca se selecciona isCorrect: las respuestas correctas solo salen al responder cada ficha.
+      cards: {
+        orderBy: [{ order: "asc" }, { id: "asc" }],
+        select: { id: true, type: true, text: true, options: { orderBy: { id: "asc" }, select: { id: true, text: true } } },
+      },
     },
   });
   if (!lesson) notFound();
+
+  // Verdadero/falso siempre con «Verdadero» primero; el resto, en el orden en que se crearon.
+  const cards = lesson.cards.map((card) => ({
+    ...card,
+    options: card.type === "TRUE_FALSE" ? [...card.options].sort((a, b) => b.text.localeCompare(a.text)) : card.options,
+  }));
+  const ownModule = outline.modules.find((m) => m.id === item.moduleId);
+  const canFinishModule =
+    !preview && !!ownModule && ownModule.id === outline.currentModuleId && ownModule.ready && !ownModule.finalized;
+  const lastModuleId = outline.modules.filter((m) => !m.empty).at(-1)?.id;
 
   const fileUrl = lesson.storagePath
     ? await createReadUrl(lesson.storagePath, lesson.type === "FILE" ? (lesson.fileName ?? undefined) : undefined)
@@ -147,6 +164,15 @@ export default async function LessonPage({
           <div className="whitespace-pre-wrap break-words max-w-prose leading-[1.7] text-zinc-800">{lesson.body}</div>
         )}
 
+        {lesson.type === "CARDS" && (
+          <div className="flex flex-col gap-5">
+            {lesson.body && (
+              <div className="max-w-prose whitespace-pre-wrap break-words leading-[1.7] text-zinc-800">{lesson.body}</div>
+            )}
+            <CardsPlayer courseId={courseId} lessonId={lessonId} cards={cards} />
+          </div>
+        )}
+
         {lesson.type === "VIDEO_EMBED" &&
           (embedUrl ? (
             <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
@@ -220,6 +246,14 @@ export default async function LessonPage({
             <LinkButton href={itemHref(courseId, next)} variant="secondary">
               Siguiente
             </LinkButton>
+          )}
+          {canFinishModule && ownModule && (item.done || lesson.type === "SESSION") && (
+            <FinishModuleForm
+              courseId={courseId}
+              moduleId={ownModule.id}
+              last={lastModuleId === ownModule.id}
+              issuesCertificate={ownModule.issuesCertificate}
+            />
           )}
           {!item.done && lesson.type !== "SESSION" && (
             <form action={completeLesson}>

@@ -12,6 +12,7 @@ export const FLASH = {
   sin_destinatarios: "No hay personas que cumplan esa selección.",
   propia_cuenta: "No puede cambiar su propio rol ni desactivar su propia cuenta.",
   pregunta_invalida: "La pregunta no es válida: revise el texto, las opciones y la respuesta correcta.",
+  ficha_invalida: "La ficha no es válida: revise la pregunta, las opciones, la respuesta correcta y la retroalimentación.",
   leccion_invalida: "La lección no es válida: revise los campos.",
   enlace_invalido: "El enlace no es válido. Para video use YouTube o Vimeo.",
   sesion_invalida: "La sesión no es válida: revise la fecha, la hora, el enlace (debe empezar con https://) y el instructor.",

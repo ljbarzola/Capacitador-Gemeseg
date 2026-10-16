@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCourseAccess } from "@/lib/dal";
-import { getOutlineCached } from "@/lib/progress";
+import { getOutlineCached, persistLegacyModules } from "@/lib/progress";
 import { CourseSidebar } from "./course-sidebar";
 
 export default async function CourseLayout({
@@ -14,6 +14,8 @@ export default async function CourseLayout({
   const { user, preview } = await getCourseAccess(courseId);
   const outline = await getOutlineCached(courseId, preview ? null : user.id);
   if (!outline) notFound();
+  // Quien ya venía avanzado recibe sus módulos terminados como finalizados (y su certificado).
+  if (!preview) await persistLegacyModules(user.id, courseId, outline);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[18rem_1fr]">

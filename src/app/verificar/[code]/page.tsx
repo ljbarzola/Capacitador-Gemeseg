@@ -17,7 +17,16 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
   const cert = /^GMS-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)
     ? await getPrisma().certificate.findUnique({
         where: { code },
-        select: { code: true, holderName: true, holderCedula: true, courseTitle: true, issuedAt: true, expiresAt: true },
+        select: {
+          code: true,
+          holderName: true,
+          holderCedula: true,
+          courseTitle: true,
+          kind: true,
+          moduleTitle: true,
+          issuedAt: true,
+          expiresAt: true,
+        },
       })
     : null;
   const state = cert ? certState(cert.expiresAt) : null;
@@ -44,7 +53,16 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
               <p className="mt-1 text-zinc-600">Cédula {maskCedula(cert.holderCedula)}</p>
               <dl className="mt-6 divide-y divide-zinc-200 border-y border-zinc-200 text-sm">
                 {[
-                  ["Curso aprobado", cert.courseTitle],
+                  ...(cert.kind === "MODULE"
+                    ? [
+                        ["Tipo", "Certificado de módulo"],
+                        ["Módulo finalizado", cert.moduleTitle ?? ""],
+                        ["Curso", cert.courseTitle],
+                      ]
+                    : [
+                        ["Tipo", "Certificado final del curso"],
+                        ["Curso aprobado", cert.courseTitle],
+                      ]),
                   ["Fecha de emisión", formatDate(cert.issuedAt)],
                   ["Vigencia", cert.expiresAt ? `Hasta el ${formatDate(cert.expiresAt)}` : "Sin vencimiento"],
                   ["Estado", CERT_STATE_LABEL[state!]],

@@ -65,6 +65,12 @@ export const IconQuiz = (p: SVGProps<SVGSVGElement>) => (
     <path d="M7 8l1 1 2-2M7 13l1 1 2-2M12 8h1.5M12 13h1.5" />
   </Svg>
 );
+export const IconCards = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <rect x="3.5" y="6.5" width="10" height="9" rx="1.5" />
+    <path d="M6.5 6.5V5a1.5 1.5 0 011.5-1.5h7A1.5 1.5 0 0116.5 5v6.5A1.5 1.5 0 0115 13h-1.5M6.5 10.5h4M6.5 12.75h2.5" />
+  </Svg>
+);
 export const IconDownload = (p: SVGProps<SVGSVGElement>) => (
   <Svg {...p}>
     <path d="M10 3.5v9M6.5 9.5L10 13l3.5-3.5M4 16h12" />
@@ -176,6 +182,8 @@ export function LessonIcon({ type, ...props }: { type?: string } & SVGProps<SVGS
       return <IconFile {...props} />;
     case "SESSION":
       return <IconCalendar {...props} />;
+    case "CARDS":
+      return <IconCards {...props} />;
     default:
       return <IconText {...props} />;
   }

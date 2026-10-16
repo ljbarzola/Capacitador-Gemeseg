@@ -28,6 +28,8 @@ export const AUDIT_ACTIONS = {
   "examen.eliminar": "Examen eliminado",
   "pregunta.guardar": "Pregunta guardada",
   "pregunta.eliminar": "Pregunta eliminada",
+  "ficha.guardar": "Ficha guardada",
+  "ficha.eliminar": "Ficha eliminada",
   "inscripcion.asignar": "Curso asignado",
   "inscripcion.quitar": "Inscripción eliminada",
   "certificado.emitir": "Certificado emitido",

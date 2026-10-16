@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { audit } from "@/lib/audit";
-import { certState, startRecertification } from "@/lib/certificates";
+import { certState, issueModuleCertificate, startRecertification } from "@/lib/certificates";
 import { itemHref } from "@/lib/course-links";
 import { getCourseAccess } from "@/lib/dal";
 import { getPrisma } from "@/lib/prisma";
@@ -43,6 +43,66 @@ export async function completeLesson(formData: FormData) {
   const index = fresh.items.findIndex((i) => i.key === key);
   const next = fresh.items.slice(index + 1).find((i) => i.accessible);
   redirect(next ? itemHref(courseId, next) : `/cursos/${courseId}`);
+}
+
+// «Finalizar módulo»: solo el módulo actual y solo cuando ya terminó todo lo que depende de la
+// persona. Guarda la marca, emite el certificado del módulo (si tiene la casilla) y, si era el
+// último, el curso queda completo y se emite el certificado final (lo hace syncEnrollment).
+export async function finishModule(formData: FormData) {
+  const courseId = field(formData, "courseId");
+  const moduleId = field(formData, "moduleId");
+  const { user, preview, enrollment } = await getCourseAccess(courseId);
+  if (preview || !enrollment) redirect(`/cursos/${courseId}`);
+
+  const outline = await getOutline(courseId, user.id);
+  const target = outline?.modules.find((m) => m.id === moduleId);
+  if (!outline || !target || target.id !== outline.currentModuleId || !target.ready) redirect(`/cursos/${courseId}`);
+
+  if (!target.finalized) {
+    await getPrisma().moduleCompletion.upsert({
+      where: { userId_moduleId: { userId: user.id, moduleId } },
+      create: { userId: user.id, moduleId },
+      update: { completedAt: new Date() }, // la marca de un ciclo anterior ya no cuenta
+    });
+    await issueModuleCertificate(enrollment.id, moduleId);
+  }
+  await syncEnrollment(user.id, courseId);
+  // El índice del curso cambia de módulo: se vuelve a calcular el layout.
+  revalidatePath(`/cursos/${courseId}`, "layout");
+  redirect(`/cursos/${courseId}?finalizado=${encodeURIComponent(moduleId)}`);
+}
+
+// Ficha de pregunta y respuesta: se califica en el servidor y devuelve siempre la retroalimentación.
+// Es formativa: no guarda nada. Las respuestas correctas solo salen después de responder.
+export type CardResult =
+  | { ok: true; correct: boolean; feedback: string; correctOptionIds: string[] }
+  | { ok: false; message: string };
+
+export async function answerCard(input: {
+  courseId: string;
+  lessonId: string;
+  cardId: string;
+  optionIds: string[];
+}): Promise<CardResult> {
+  const { user, preview } = await getCourseAccess(String(input.courseId));
+  const outline = await getOutline(String(input.courseId), preview ? null : user.id);
+  const item = outline?.items.find((i) => i.key === `lesson:${input.lessonId}`);
+  if (!item || !item.accessible) return { ok: false, message: "No puede abrir esta actividad todavía." };
+
+  const card = await getPrisma().lessonCard.findFirst({
+    where: { id: String(input.cardId), lessonId: input.lessonId },
+    select: { feedback: true, options: { select: { id: true, isCorrect: true } } },
+  });
+  if (!card) return { ok: false, message: "No se encontró la ficha." };
+
+  const chosen = new Set((Array.isArray(input.optionIds) ? input.optionIds : []).map(String));
+  if (chosen.size === 0) return { ok: false, message: "Elija al menos una respuesta." };
+  const correctOptionIds = card.options.filter((o) => o.isCorrect).map((o) => o.id);
+  const correct =
+    correctOptionIds.length === chosen.size &&
+    correctOptionIds.every((id) => chosen.has(id)) &&
+    [...chosen].every((id) => card.options.some((o) => o.id === id));
+  return { ok: true, correct, feedback: card.feedback, correctOptionIds };
 }
 
 // Califica el examen en el servidor: las respuestas correctas nunca llegan al navegador.
@@ -122,7 +182,7 @@ export async function restartCertification(formData: FormData) {
   if (!enrollment) redirect(`/cursos/${courseId}`);
 
   const latest = await getPrisma().certificate.findFirst({
-    where: { enrollmentId: enrollment.id },
+    where: { enrollmentId: enrollment.id, kind: "COURSE" },
     orderBy: { issuedAt: "desc" },
     select: { expiresAt: true },
   });

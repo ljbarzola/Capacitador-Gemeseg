@@ -56,6 +56,9 @@ const tf = (text, value) => ({
   ],
 });
 const text = (title, body) => ({ type: "TEXT", title, body });
+// Fichas de pregunta y respuesta (lección CARDS): cada ficha lleva su retroalimentación, que se muestra siempre al responder.
+const cards = (title, body, items) => ({ type: "CARDS", title, body, cards: items });
+const card = (kind, textValue, feedback) => ({ ...kind(textValue), feedback });
 // Sesión en vivo: días desde hoy y hora de inicio en Ecuador (UTC-5). El enlace es de ejemplo.
 const ecuadorToday = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Guayaquil" }).format(new Date());
 const session = (title, daysFromToday, time, url, body) => {
@@ -210,6 +213,27 @@ const courses = [
               text(
                 "Cómo reportar una condición insegura",
                 "Una condición insegura es una situación del entorno que puede provocar un accidente. No espere a que alguien se lastime para reportarla.\n\n1. Proteja la zona si puede hacerlo sin riesgo (cinta, conos, aviso).\n2. Avise de inmediato a su supervisor.\n3. Registre en la bitácora qué encontró, dónde y a qué hora.\n4. Verifique en su siguiente ronda que haya sido corregida.",
+              ),
+              cards(
+                "Fichas: ¿peligro o riesgo?",
+                "Responda cada ficha: al elegir una opción verá una ventana con la retroalimentación. No cuentan para la nota.",
+                [
+                  card(
+                    (t) => single(t, "Un peligro: puede causar un daño", ["Un riesgo: ya causó el daño", "Un EPP", "Una consigna del puesto"]),
+                    "Un cable pelado en el cuarto de monitoreo es...",
+                    "El peligro es lo que puede causar un daño (un cable pelado, un piso mojado). El riesgo es la probabilidad de que ese daño ocurra y qué tan grave sería. Ante un peligro: eliminarlo, señalizarlo y reportarlo.",
+                  ),
+                  card(
+                    (t) => tf(t, false),
+                    "Una condición insegura solo se reporta cuando alguien ya se lastimó.",
+                    "Falso. Una condición insegura se reporta apenas se detecta: reportar a tiempo evita el accidente. Proteja la zona si puede, avise al supervisor y registre en la bitácora.",
+                  ),
+                  card(
+                    (t) => multi(t, ["Avisar de inmediato al supervisor", "Registrar en la bitácora qué, dónde y a qué hora"], ["Esperar al cambio de turno", "Comentarlo solo con el cliente"]),
+                    "Al encontrar un piso mojado sin señalizar, usted debe:",
+                    "Proteja la zona (cinta, conos o aviso), avise de inmediato a su supervisor y deje constancia en la bitácora: qué encontró, dónde y a qué hora. Esperar solo deja el peligro activo.",
+                  ),
+                ],
               ),
             ],
             quiz: {
@@ -774,7 +798,7 @@ async function main() {
     console.log("Archivos de ejemplo subidos al bucket.");
   }
 
-  const stats = { courses: 0, modules: 0, subs: 0, lessons: 0, quizzes: 0, questions: 0 };
+  const stats = { courses: 0, modules: 0, subs: 0, lessons: 0, cards: 0, quizzes: 0, questions: 0 };
   for (const c of courses.filter((c) => !only || c.title.toLowerCase().includes(only.toLowerCase()))) {
     const courseId = cuid();
     await q(
@@ -809,11 +833,25 @@ async function main() {
             storagePath = a.path;
             fileName = a.name;
           }
+          const lessonId = cuid();
           await q(
             `insert into "Lesson"(id,"submoduleId",title,type,"order",body,url,"storagePath","fileName","startsAt","instructorId") values($1,$2,$3,$4::"LessonType",$5,$6,$7,$8,$9,$10,$11)`,
-            [cuid(), subId, l.title, type, li++, body, url, storagePath, fileName, startsAt, instructorId],
+            [lessonId, subId, l.title, type, li++, body, url, storagePath, fileName, startsAt, instructorId],
           );
           stats.lessons++;
+          // Fichas de una lección CARDS
+          let ci = 0;
+          for (const cardItem of l.cards ?? []) {
+            const cid = cuid();
+            await q(
+              `insert into "LessonCard"(id,"lessonId",type,text,feedback,"order") values($1,$2,$3::"QuestionType",$4,$5,$6)`,
+              [cid, lessonId, cardItem.type, cardItem.text, cardItem.feedback, ci++],
+            );
+            for (const o of cardItem.options) {
+              await q(`insert into "LessonCardOption"(id,"cardId",text,"isCorrect") values($1,$2,$3,$4)`, [cuid(), cid, o.text, o.ok]);
+            }
+            stats.cards++;
+          }
         }
         if (s.quiz) {
           const quizId = cuid();

@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import type { AttendanceStatus, LessonType, Progression } from "@/generated/prisma/client";
-import { issueCertificate } from "@/lib/certificates";
+import { issueCertificate, issueModuleCertificate } from "@/lib/certificates";
 import { getPrisma } from "@/lib/prisma";
 import { countsAsDone } from "@/lib/sessions";
 
@@ -11,6 +11,11 @@ import { countsAsDone } from "@/lib/sessions";
 // en vivo está hecha si el instructor marcó "Asistió" o "Justificada" (en el ciclo actual).
 // En progresión SECUENCIAL solo es accesible si todos los anteriores están hechos, salvo las
 // sesiones en vivo: siempre son accesibles y nunca bloquean lo que sigue.
+//
+// Además, la persona avanza de un módulo a la vez (en todos los cursos): solo ve y puede abrir el
+// módulo actual, que es el primero que todavía no finalizó. Al terminar sus actividades pulsa
+// «Finalizar módulo» (ModuleCompletion) y pasa al siguiente. Cuando el curso queda completo se
+// habilita el repaso de todos los módulos. En vista previa (userId null) se ve todo libremente.
 
 export type OutlineItem = {
   kind: "lesson" | "quiz";
@@ -18,11 +23,25 @@ export type OutlineItem = {
   id: string; // id de la lección, o del submódulo para el examen
   title: string;
   submoduleId: string;
+  moduleId: string;
   lessonType?: LessonType;
   startsAt?: Date; // solo sesiones en vivo
   attendance?: AttendanceStatus | null; // solo sesiones en vivo
   done: boolean;
   accessible: boolean;
+};
+
+export type OutlineModule = {
+  id: string;
+  title: string;
+  issuesCertificate: boolean;
+  submodules: { id: string; title: string; items: OutlineItem[] }[];
+  empty: boolean; // sin actividades: se omite (no se muestra ni certifica)
+  ready: boolean; // terminó todo lo que depende de la persona: puede pulsar «Finalizar módulo»
+  finalized: boolean;
+  // Finalizado por avance anterior a que existiera el botón: falta guardarlo y certificarlo.
+  legacy: boolean;
+  visible: boolean; // se muestra en el índice del curso
 };
 
 export type Outline = {
@@ -33,11 +52,9 @@ export type Outline = {
     progression: Progression;
     published: boolean;
   };
-  modules: {
-    id: string;
-    title: string;
-    submodules: { id: string; title: string; items: OutlineItem[] }[];
-  }[];
+  modules: OutlineModule[];
+  currentModuleId: string | null; // módulo que se muestra a la persona (null en vista previa)
+  review: boolean; // curso completo: se pueden repasar todos los módulos
   items: OutlineItem[];
   total: number;
   completed: number;
@@ -64,6 +81,7 @@ export async function getOutline(courseId: string, userId: string | null): Promi
         select: {
           id: true,
           title: true,
+          issuesCertificate: true,
           submodules: {
             orderBy: byOrder,
             select: {
@@ -90,15 +108,18 @@ export async function getOutline(courseId: string, userId: string | null): Promi
 
   let doneLessons = new Set<string>();
   let passedQuizzes = new Set<string>();
+  let finishedModules = new Set<string>();
+  let enrollmentCompleted = false;
   const attendance = new Map<string, AttendanceStatus>();
   if (userId) {
     // Solo cuenta el avance posterior al inicio del ciclo actual (cambia al recertificar).
     const enrollment = await prisma.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId } },
-      select: { cycleStartedAt: true },
+      select: { cycleStartedAt: true, status: true },
     });
     const since = enrollment?.cycleStartedAt ?? new Date(0);
-    const [progress, attempts, marks] = await Promise.all([
+    enrollmentCompleted = enrollment?.status === "COMPLETED";
+    const [progress, attempts, marks, finished] = await Promise.all([
       prisma.lessonProgress.findMany({
         where: { userId, lessonId: { in: lessonIds }, completedAt: { gte: since } },
         select: { lessonId: true },
@@ -114,10 +135,15 @@ export async function getOutline(courseId: string, userId: string | null): Promi
             select: { lessonId: true, status: true },
           })
         : Promise.resolve([]),
+      prisma.moduleCompletion.findMany({
+        where: { userId, moduleId: { in: course.modules.map((m) => m.id) }, completedAt: { gte: since } },
+        select: { moduleId: true },
+      }),
     ]);
     for (const m of marks) attendance.set(m.lessonId, m.status);
     doneLessons = new Set(progress.map((p) => p.lessonId));
     passedQuizzes = new Set(attempts.map((a) => a.quizId));
+    finishedModules = new Set(finished.map((f) => f.moduleId));
   }
 
   const sequential = userId !== null && course.progression === "SEQUENTIAL";
@@ -133,9 +159,10 @@ export async function getOutline(courseId: string, userId: string | null): Promi
     return full;
   };
 
-  const modules = course.modules.map((module) => ({
+  const built = course.modules.map((module) => ({
     id: module.id,
     title: module.title,
+    issuesCertificate: module.issuesCertificate,
     submodules: module.submodules.map((submodule) => {
       const subItems: OutlineItem[] = submodule.lessons.map((lesson) => {
         if (lesson.type === "SESSION") {
@@ -147,6 +174,7 @@ export async function getOutline(courseId: string, userId: string | null): Promi
               id: lesson.id,
               title: lesson.title,
               submoduleId: submodule.id,
+              moduleId: module.id,
               lessonType: lesson.type,
               startsAt: lesson.startsAt ?? undefined,
               attendance: status,
@@ -161,6 +189,7 @@ export async function getOutline(courseId: string, userId: string | null): Promi
           id: lesson.id,
           title: lesson.title,
           submoduleId: submodule.id,
+          moduleId: module.id,
           lessonType: lesson.type,
           done: doneLessons.has(lesson.id),
         });
@@ -173,6 +202,7 @@ export async function getOutline(courseId: string, userId: string | null): Promi
             id: submodule.id,
             title: `Examen: ${submodule.title}`,
             submoduleId: submodule.id,
+            moduleId: module.id,
             done: passedQuizzes.has(submodule.quiz.id),
           }),
         );
@@ -181,7 +211,40 @@ export async function getOutline(courseId: string, userId: string | null): Promi
     }),
   }));
 
+  // Estado de cada módulo (solo para una persona inscrita; en vista previa todo queda libre).
+  const itemsOf = (module: (typeof built)[number]) => module.submodules.flatMap((s) => s.items);
+  const states = built.map((module, index) => {
+    const own = itemsOf(module);
+    const empty = own.length === 0;
+    // Las sesiones en vivo no bloquean: dependen del instructor, no de la persona.
+    const ready = !empty && own.every((i) => i.lessonType === "SESSION" || i.done);
+    const later = built.slice(index + 1).some((m) => itemsOf(m).some((i) => i.done));
+    const recorded = finishedModules.has(module.id);
+    // Quien ya estaba avanzado antes de existir el botón: sus módulos terminados cuentan como
+    // finalizados si siguió con otro módulo o completó el curso.
+    const legacy = userId !== null && !recorded && ready && (later || enrollmentCompleted);
+    // Si el instructor agrega contenido a un módulo ya finalizado, se reabre (deja de estar «ready»)
+    // y la persona debe completar lo nuevo y volver a finalizarlo; así nunca queda atascada.
+    return { empty, ready, legacy, finalized: userId !== null && (empty || (recorded && ready) || legacy) };
+  });
+
   const completed = items.filter((i) => i.done).length;
+  const complete = items.length > 0 && completed === items.length && states.every((s) => s.finalized);
+  const review = userId !== null && complete;
+  // Módulo que se muestra: el primero sin finalizar; si ya finalizó todos (le faltan solo
+  // sesiones por registrar) se queda en el último con actividades.
+  const firstOpen = states.findIndex((s) => !s.finalized);
+  const lastWithItems = [...built.keys()].reverse().find((i) => !states[i].empty) ?? -1;
+  const currentIndex = userId === null ? -1 : firstOpen >= 0 ? firstOpen : lastWithItems;
+  const currentModuleId = currentIndex >= 0 ? built[currentIndex].id : null;
+
+  const modules: OutlineModule[] = built.map((module, index) => {
+    const visible = userId === null || review || index === currentIndex;
+    // Fuera del módulo visible nada se puede abrir (ni por URL).
+    if (!visible) for (const item of itemsOf(module)) item.accessible = false;
+    return { ...module, ...states[index], visible };
+  });
+
   return {
     course: {
       id: course.id,
@@ -191,11 +254,13 @@ export async function getOutline(courseId: string, userId: string | null): Promi
       published: course.published,
     },
     modules,
+    currentModuleId,
+    review,
     items,
     total: items.length,
     completed,
     percent: items.length === 0 ? 0 : Math.round((completed / items.length) * 100),
-    complete: items.length > 0 && completed === items.length,
+    complete,
     // "Continuar" lleva primero al contenido pendiente; las sesiones pendientes quedan para el final
     // porque dependen de la fecha y de que el instructor marque la asistencia.
     next:
@@ -207,6 +272,27 @@ export async function getOutline(courseId: string, userId: string | null): Promi
 
 // Misma consulta, memorizada durante un mismo render (layout + página no la repiten).
 export const getOutlineCached = cache(getOutline);
+
+// Registra como finalizados (y certifica) los módulos que la persona ya había terminado antes de
+// que existiera el botón «Finalizar módulo». Es idempotente y no hace nada en el caso normal.
+export async function persistLegacyModules(userId: string, courseId: string, outline: Outline) {
+  const legacy = outline.modules.filter((m) => m.legacy);
+  if (legacy.length === 0) return;
+  const prisma = getPrisma();
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { userId_courseId: { userId, courseId } },
+    select: { id: true },
+  });
+  if (!enrollment) return;
+  for (const entry of legacy) {
+    await prisma.moduleCompletion.upsert({
+      where: { userId_moduleId: { userId, moduleId: entry.id } },
+      create: { userId, moduleId: entry.id },
+      update: { completedAt: new Date() }, // la marca de un ciclo anterior ya no cuenta
+    });
+    await issueModuleCertificate(enrollment.id, entry.id);
+  }
+}
 
 // Actualiza el estado de la inscripción según el avance (ASSIGNED → IN_PROGRESS → COMPLETED).
 export async function syncEnrollment(userId: string, courseId: string) {

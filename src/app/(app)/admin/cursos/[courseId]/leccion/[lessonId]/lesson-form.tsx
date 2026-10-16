@@ -4,10 +4,11 @@ import { useState } from "react";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui";
 import { requestUpload, saveLesson } from "../../../actions";
 
-type LessonType = "TEXT" | "VIDEO_EMBED" | "VIDEO_UPLOAD" | "IMAGE" | "LINK" | "FILE" | "SESSION";
+type LessonType = "TEXT" | "VIDEO_EMBED" | "VIDEO_UPLOAD" | "IMAGE" | "LINK" | "FILE" | "SESSION" | "CARDS";
 
 const TYPES: { value: LessonType; label: string }[] = [
   { value: "TEXT", label: "Texto" },
+  { value: "CARDS", label: "Fichas de pregunta y respuesta" },
   { value: "VIDEO_EMBED", label: "Video de YouTube o Vimeo" },
   { value: "VIDEO_UPLOAD", label: "Video subido (archivo)" },
   { value: "IMAGE", label: "Imagen" },
@@ -131,6 +132,19 @@ export function LessonForm({
       {type === "TEXT" && (
         <Field label="Contenido" hint="Separe los párrafos con una línea en blanco.">
           <Textarea name="body" defaultValue={initial?.body ?? ""} rows={12} maxLength={50000} required />
+        </Field>
+      )}
+
+      {type === "CARDS" && (
+        <Field
+          label="Texto introductorio (opcional)"
+          hint={
+            initial?.type === "CARDS"
+              ? "Se muestra arriba de las fichas. Las fichas se agregan o editan más abajo."
+              : "Se muestra arriba de las fichas. Al crear la lección podrá agregar las fichas."
+          }
+        >
+          <Textarea name="body" defaultValue={initial?.body ?? ""} rows={4} maxLength={5000} />
         </Field>
       )}
 

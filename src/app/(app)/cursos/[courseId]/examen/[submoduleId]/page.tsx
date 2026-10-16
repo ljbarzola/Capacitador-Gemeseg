@@ -7,6 +7,7 @@ import { getPrisma } from "@/lib/prisma";
 import { getOutlineCached } from "@/lib/progress";
 import { shuffle } from "@/lib/quiz";
 import { submitQuiz } from "../../actions";
+import { FinishModuleForm } from "../../finish-module-form";
 
 export const metadata: Metadata = { title: "Examen · Capacitación Gemeseg" };
 
@@ -30,6 +31,10 @@ export default async function QuizPage({
   const item = outline.items[index];
   if (!item.accessible) redirect(`/cursos/${courseId}`);
   const next = outline.items[index + 1];
+  const ownModule = outline.modules.find((m) => m.id === item.moduleId);
+  const canFinishModule =
+    !preview && !!ownModule && ownModule.id === outline.currentModuleId && ownModule.ready && !ownModule.finalized;
+  const lastModuleId = outline.modules.filter((m) => !m.empty).at(-1)?.id;
 
   // Nunca se selecciona isCorrect: las respuestas correctas no salen del servidor.
   const quiz = await getPrisma().quiz.findUnique({
@@ -106,11 +111,17 @@ export default async function QuizPage({
             {result.passed ? "¡Aprobó!" : "No alcanzó la nota mínima"} — obtuvo {result.score}%
           </p>
           {result.passed ? (
-            next?.accessible && (
-              <LinkButton href={itemHref(courseId, next)} className="mt-3">
-                Continuar
-              </LinkButton>
-            )
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {next?.accessible && <LinkButton href={itemHref(courseId, next)}>Continuar</LinkButton>}
+              {canFinishModule && ownModule && (
+                <FinishModuleForm
+                  courseId={courseId}
+                  moduleId={ownModule.id}
+                  last={lastModuleId === ownModule.id}
+                  issuesCertificate={ownModule.issuesCertificate}
+                />
+              )}
+            </div>
           ) : (
             <p className="mt-1 text-sm">Repase el contenido y vuelva a intentarlo.</p>
           )}

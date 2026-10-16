@@ -25,7 +25,8 @@ export default async function PanelPage() {
       status: true,
       dueAt: true,
       course: { select: { id: true, title: true, description: true } },
-      certificates: { orderBy: { issuedAt: "desc" }, take: 1, select: { expiresAt: true } },
+      // Solo el certificado final del curso: los de módulo no cuentan para la renovación.
+      certificates: { where: { kind: "COURSE" }, orderBy: { issuedAt: "desc" }, take: 1, select: { expiresAt: true } },
     },
   });
   const outlines = await Promise.all(enrollments.map((e) => getOutline(e.course.id, user.id)));

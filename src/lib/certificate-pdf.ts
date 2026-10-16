@@ -20,6 +20,9 @@ type CertificateData = {
   courseTitle: string;
   issuedAt: Date;
   expiresAt: Date | null;
+  // Certificado de módulo: el título del módulo va como línea principal y el curso debajo.
+  kind?: "COURSE" | "MODULE";
+  moduleTitle?: string | null;
 };
 
 // Reduce el tamaño hasta que el texto quepa en el ancho disponible.
@@ -48,7 +51,12 @@ export async function renderCertificatePdf(cert: CertificateData, verifyUrl: str
   const pdf = await PDFDocument.create();
   pdf.setTitle(`Certificado ${cert.code}`);
   pdf.setAuthor("Gemeseg Seguridad");
-  pdf.setSubject(`Certificado de aprobación: ${cert.courseTitle}`);
+  const isModule = cert.kind === "MODULE" && !!cert.moduleTitle;
+  pdf.setSubject(
+    isModule
+      ? `Certificado de módulo: ${cert.moduleTitle} (${cert.courseTitle})`
+      : `Certificado de aprobación: ${cert.courseTitle}`,
+  );
 
   const page = pdf.addPage([841.89, 595.28]);
   const { width, height } = page.getSize();
@@ -73,7 +81,7 @@ export async function renderCertificatePdf(cert: CertificateData, verifyUrl: str
     page.drawText(text, { x: mid - w / 2, y, size, font, color });
   };
 
-  draw("CERTIFICADO DE APROBACIÓN", bold, 26, height - 150);
+  draw(isModule ? "CERTIFICADO DE MÓDULO" : "CERTIFICADO DE APROBACIÓN", bold, 26, height - 150);
   page.drawRectangle({ x: mid - 28, y: height - 166, width: 56, height: 3, color: ORANGE });
 
   draw("Gemeseg Seguridad certifica que", regular, 13, height - 205, GREY);
@@ -82,11 +90,26 @@ export async function renderCertificatePdf(cert: CertificateData, verifyUrl: str
   draw(cert.holderName, serifBold, nameSize, height - 252);
   draw(`con cédula de identidad N.° ${cert.holderCedula}`, regular, 12, height - 276, GREY);
 
-  draw("ha completado y aprobado satisfactoriamente el curso", regular, 13, height - 314, GREY);
+  draw(
+    isModule ? "ha completado satisfactoriamente el módulo" : "ha completado y aprobado satisfactoriamente el curso",
+    regular,
+    13,
+    height - 314,
+    GREY,
+  );
 
-  const titleSize = fit(cert.courseTitle, bold, 24, area, 16);
-  const titleLines = wrap(cert.courseTitle, bold, titleSize, area).slice(0, 3);
-  titleLines.forEach((line, i) => draw(line, bold, titleSize, height - 350 - i * (titleSize + 6)));
+  // Certificado de módulo: título del módulo y, debajo, el curso al que pertenece.
+  const mainTitle = isModule ? (cert.moduleTitle as string) : cert.courseTitle;
+  // (en el de módulo el título es un poco menor y se sube para que quepa la línea del curso).
+  const titleSize = fit(mainTitle, bold, isModule ? 22 : 24, area, 16);
+  const titleLines = wrap(mainTitle, bold, titleSize, area).slice(0, isModule ? 2 : 3);
+  const titleTop = height - (isModule ? 344 : 350);
+  const lineGap = titleSize + (isModule ? 4 : 6);
+  titleLines.forEach((line, i) => draw(line, bold, titleSize, titleTop - i * lineGap));
+  if (isModule) {
+    const courseLine = `del curso «${cert.courseTitle}»`;
+    draw(courseLine, regular, fit(courseLine, regular, 14, area, 10), titleTop - titleLines.length * lineGap - 2, GREY);
+  }
 
   const baseY = 138;
   const issued = DATE.format(cert.issuedAt);

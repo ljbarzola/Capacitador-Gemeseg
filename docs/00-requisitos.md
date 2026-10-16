@@ -48,6 +48,7 @@ Plataforma de capacitación en línea para Gemeseg (empresa de seguridad), despl
 | Correos automáticos | **Descartados** (asignación, recordatorios y certificados). Todo se consulta en la plataforma |
 | Campos de registro | Configurables por el administrador (texto o lista); contraseñas iniciales de cuentas importadas se entregan por CSV descargable y se cambian dentro de la plataforma (2026-10-01) |
 | Sesiones en vivo | Un tipo de lección más (fecha, hora, enlace de cualquier plataforma, instructor responsable, indicaciones). El instructor marca la asistencia (Asistió / Justificada / No asistió) con casillas y marcas masivas; cuenta para completar y certificar; nunca bloquea contenido; horario igual para todos; "Próximas sesiones" en el panel (2026-10-02) |
+| Módulos, certificados y fichas | (2026-10-16) **Un módulo a la vez en todos los cursos**: se ve solo el módulo actual y «Finalizar módulo» abre el siguiente; con el curso completo se pueden repasar todos. **Certificado por módulo** (al finalizarlo, con casilla «Emite certificado» por módulo, activada por defecto, vigencia del curso) **y certificado final** (el de siempre). **Fichas de pregunta y respuesta**: lección con varias fichas; al responder siempre sale una ventana con retroalimentación (acierte o no); formativas, no cuentan para la nota. Alumnos ya avanzados: retroactivo al abrir el curso. Instructores y administradores solo ven vista previa con selector de módulo |
 | Dominio | Prioridad baja: lo importante es que **funcione**, aunque sea con la URL por defecto de Google/Firebase. El DNS de `gemeseg.com` lo administra el usuario (cPanel); cuando se necesite, se le entregan los registros a crear |
 | Identidad visual | Logos en `public/brand/`. Azul marino `#100F31` y naranja `#EE3B1B` (muestreados del logotipo). Ícono: la "M" naranja |
 
@@ -55,7 +56,7 @@ Plataforma de capacitación en línea para Gemeseg (empresa de seguridad), despl
 
 - Intentos máximos por examen y tiempo límite: no se seleccionaron → quedan **opcionales y desactivados por defecto**.
 - Rol Supervisor/Jefe de área: no seleccionado.
-- Retroalimentación por respuesta y banco de preguntas con sorteo: no seleccionado (puede revisarse después).
+- Retroalimentación por respuesta: **ya existe solo en las fichas** (2026-10-16); los exámenes siguen sin ella. Banco de preguntas con sorteo: no seleccionado (puede revisarse después).
 
 ## Preguntas abiertas
 

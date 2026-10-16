@@ -29,7 +29,7 @@ export default async function AdminHome() {
     prisma.course.count({ where: { published: true } }),
     prisma.enrollment.count(),
     prisma.enrollment.count({ where: { status: "COMPLETED" } }),
-    prisma.certificate.count(),
+    prisma.certificate.count({ where: { kind: "COURSE" } }), // finales; los de módulo no se suman
   ]);
 
   const stats = [

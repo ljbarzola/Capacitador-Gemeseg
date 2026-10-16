@@ -1,37 +1,13 @@
 import Link from "next/link";
-import { IconCheck, IconLock, IconQuiz, LessonIcon } from "@/components/icons";
+import { IconCheck } from "@/components/icons";
 import { SegmentProgress } from "@/components/ui";
-import { itemHref } from "@/lib/course-links";
-import { formatDateTime } from "@/lib/format";
-import { ItemLink } from "./item-link";
-import type { Outline, OutlineItem } from "@/lib/progress";
+import type { Outline } from "@/lib/progress";
+import { FinishModuleForm } from "./finish-module-form";
+import { ModuleBlock } from "./module-block";
+import { PreviewModules } from "./preview-modules";
 
-function Marker({ item }: { item: OutlineItem }) {
-  if (item.done) {
-    return (
-      <span
-        role="img"
-        aria-label="Completado"
-        className="mt-0.5 flex size-[18px] shrink-0 items-center justify-center rounded-full bg-green-700 text-white"
-      >
-        <IconCheck width={12} height={12} strokeWidth={2.4} />
-      </span>
-    );
-  }
-  if (!item.accessible) {
-    return (
-      <span role="img" aria-label="Bloqueado" className="mt-0.5 flex size-[18px] shrink-0 items-center justify-center text-zinc-400">
-        <IconLock width={15} height={15} />
-      </span>
-    );
-  }
-  return (
-    <span aria-hidden className="mt-0.5 flex size-[18px] shrink-0 items-center justify-center text-zinc-500">
-      {item.kind === "quiz" ? <IconQuiz width={15} height={15} /> : <LessonIcon type={item.lessonType} width={15} height={15} />}
-    </span>
-  );
-}
-
+// Índice del curso. La persona ve solo su módulo actual (o todos, si ya completó el curso y repasa);
+// el personal en vista previa elige el módulo con un selector.
 export function CourseSidebar({
   outline,
   preview,
@@ -39,6 +15,9 @@ export function CourseSidebar({
   outline: Outline;
   preview: boolean;
 }) {
+  const withItems = outline.modules.filter((m) => !m.empty);
+  const shown = withItems.filter((m) => m.visible);
+
   return (
     <nav aria-label="Contenido del curso" className="flex flex-col gap-5">
       <div>
@@ -54,40 +33,47 @@ export function CourseSidebar({
           </div>
         )}
       </div>
-      {outline.modules.map((module) => (
-        <div key={module.id} className="flex flex-col gap-2.5 border-t border-zinc-200 pt-4">
-          <h3 className="text-[0.95rem] leading-snug text-navy">{module.title}</h3>
-          {module.submodules.map((submodule) => (
-            <div key={submodule.id} className="flex flex-col gap-0.5">
-              <h4 className="mb-0.5 text-xs font-medium text-zinc-500">{submodule.title}</h4>
-              <ul className="flex flex-col">
-                {submodule.items.map((item) => {
-                  const content = (
-                    <>
-                      <Marker item={item} />
-                      <span className="text-sm leading-snug">
-                        {item.title}
-                        {item.startsAt && <span className="block text-xs font-normal text-zinc-500">{formatDateTime(item.startsAt)}</span>}
-                      </span>
-                    </>
-                  );
-                  return (
-                    <li key={item.key}>
-                      {item.accessible ? (
-                        <ItemLink href={itemHref(outline.course.id, item)}>{content}</ItemLink>
-                      ) : (
-                        <span className="flex items-start gap-2.5 rounded-md border-l-2 border-transparent px-2 py-1.5 text-zinc-400">
-                          {content}
-                        </span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+
+      {preview ? (
+        <PreviewModules courseId={outline.course.id} modules={withItems} />
+      ) : (
+        shown.map((module) => {
+          const number = withItems.findIndex((m) => m.id === module.id) + 1;
+          return (
+            <div key={module.id} className="flex flex-col gap-2.5 border-t border-zinc-200 pt-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  Módulo {number} de {withItems.length}
+                </p>
+                <h3 className="mt-0.5 flex items-start gap-2 text-[0.95rem] leading-snug text-navy">
+                  {module.title}
+                  {module.finalized && (
+                    <span
+                      role="img"
+                      aria-label="Módulo finalizado"
+                      className="mt-0.5 flex size-[18px] shrink-0 items-center justify-center rounded-full bg-green-700 text-white"
+                    >
+                      <IconCheck width={12} height={12} strokeWidth={2.4} />
+                    </span>
+                  )}
+                </h3>
+              </div>
+              <ModuleBlock courseId={outline.course.id} module={module} />
+              {module.ready && !module.finalized && module.id === outline.currentModuleId && (
+                <div className="mt-1 flex flex-col gap-2 rounded-lg border border-green-200 bg-green-50 p-3">
+                  <p className="text-sm text-green-950">Terminó todas las actividades de este módulo.</p>
+                  <FinishModuleForm
+                    courseId={outline.course.id}
+                    moduleId={module.id}
+                    last={withItems[withItems.length - 1]?.id === module.id}
+                    issuesCertificate={module.issuesCertificate}
+                  />
+                </div>
+              )}
             </div>
-          ))}
-        </div>
-      ))}
+          );
+        })
+      )}
     </nav>
   );
 }

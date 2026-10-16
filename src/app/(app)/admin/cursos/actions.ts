@@ -111,9 +111,10 @@ export async function updateModule(formData: FormData) {
   const actor = await requireStaff();
   const id = str(formData, "id");
   const title = str(formData, "title").slice(0, 150);
+  const issuesCertificate = bool(formData, "issuesCertificate");
   if (id && title) {
-    await getPrisma().module.update({ where: { id }, data: { title } });
-    await audit(actor, "contenido.actualizar", `Módulo renombrado a «${title}» en ${await courseLabel(str(formData, "courseId"))}`, { entity: "curso", entityId: str(formData, "courseId") });
+    await getPrisma().module.update({ where: { id }, data: { title, issuesCertificate } });
+    await audit(actor, "contenido.actualizar", `Módulo «${title}» en ${await courseLabel(str(formData, "courseId"))}: ${issuesCertificate ? "emite certificado" : "sin certificado de módulo"}`, { entity: "curso", entityId: str(formData, "courseId") });
   }
   await done(str(formData, "courseId"));
 }
@@ -211,7 +212,7 @@ export async function moveItem(formData: FormData) {
 
 // ───────────── Lecciones ─────────────
 
-const LESSON_TYPES: LessonType[] = ["TEXT", "VIDEO_EMBED", "VIDEO_UPLOAD", "IMAGE", "LINK", "FILE", "SESSION"];
+const LESSON_TYPES: LessonType[] = ["TEXT", "VIDEO_EMBED", "VIDEO_UPLOAD", "IMAGE", "LINK", "FILE", "SESSION", "CARDS"];
 
 export async function saveLesson(formData: FormData) {
   const actor = await requireStaff();
@@ -290,6 +291,10 @@ export async function saveLesson(formData: FormData) {
       data.body = body || null;
       break;
     }
+    case "CARDS":
+      // Fichas: el texto es solo la introducción (opcional); las fichas se agregan después de crearla.
+      data.body = body || null;
+      break;
   }
 
   const prisma = getPrisma();
@@ -303,9 +308,87 @@ export async function saveLesson(formData: FormData) {
 
   if (!submoduleId) redirect(editor(courseId));
   const last = await prisma.lesson.aggregate({ where: { submoduleId }, _max: { order: true } });
-  await prisma.lesson.create({ data: { ...data, submoduleId, order: (last._max.order ?? -1) + 1 } });
+  const created = await prisma.lesson.create({
+    data: { ...data, submoduleId, order: (last._max.order ?? -1) + 1 },
+    select: { id: true },
+  });
   await audit(actor, "contenido.crear", `Lección «${title}» agregada a ${await courseLabel(courseId)}`, { entity: "curso", entityId: courseId });
+  // Una lección de fichas nace vacía: se lleva al editor para que agregue las fichas.
+  if (type === "CARDS") {
+    revalidatePath(editor(courseId), "layout");
+    redirect(withFlash(`${editor(courseId)}/leccion/${created.id}`, "ok", "creado"));
+  }
   await done(courseId, "creado");
+}
+
+// ───────────── Fichas (lecciones CARDS) ─────────────
+
+export async function saveCard(formData: FormData) {
+  const actor = await requireStaff();
+  const courseId = str(formData, "courseId");
+  const lessonId = str(formData, "lessonId");
+  const cardId = str(formData, "cardId");
+  const back = `${editor(courseId)}/leccion/${lessonId}`;
+
+  let raw: unknown;
+  try {
+    raw = {
+      type: str(formData, "type"),
+      text: str(formData, "text"),
+      feedback: str(formData, "feedback"),
+      options: JSON.parse(str(formData, "options") || "[]"),
+    };
+  } catch {
+    redirect(withFlash(back, "error", "ficha_invalida"));
+  }
+  const parsed = cardSchema.safeParse(raw);
+  if (!parsed.success) redirect(withFlash(back, "error", "ficha_invalida"));
+  const { type, text, feedback, options } = parsed.data;
+
+  const prisma = getPrisma();
+  const lesson = await prisma.lesson.findFirst({
+    where: { id: lessonId, type: "CARDS", submodule: { module: { courseId } } },
+    select: { id: true },
+  });
+  if (!lesson) redirect(editor(courseId));
+
+  const optionRows = options.map((o) => ({ text: o.text, isCorrect: o.correct }));
+  if (cardId) {
+    await prisma.$transaction([
+      prisma.lessonCard.update({ where: { id: cardId, lessonId }, data: { type: type as QuestionType, text, feedback } }),
+      prisma.lessonCardOption.deleteMany({ where: { cardId } }),
+      prisma.lessonCardOption.createMany({ data: optionRows.map((o) => ({ ...o, cardId })) }),
+    ]);
+  } else {
+    const last = await prisma.lessonCard.aggregate({ where: { lessonId }, _max: { order: true } });
+    await prisma.lessonCard.create({
+      data: {
+        lessonId,
+        type: type as QuestionType,
+        text,
+        feedback,
+        order: (last._max.order ?? -1) + 1,
+        options: { create: optionRows },
+      },
+    });
+  }
+  await audit(actor, "ficha.guardar", `Ficha ${cardId ? "modificada" : "agregada"} en ${await courseLabel(courseId)}: «${text.slice(0, 80)}»`, { entity: "curso", entityId: courseId });
+  revalidatePath(back);
+  redirect(withFlash(back, "ok", cardId ? "guardado" : "creado"));
+}
+
+export async function deleteCard(formData: FormData) {
+  const actor = await requireStaff();
+  const courseId = str(formData, "courseId");
+  const lessonId = str(formData, "lessonId");
+  const id = str(formData, "id");
+  const back = `${editor(courseId)}/leccion/${lessonId}`;
+  if (id) {
+    await getPrisma().lessonCard.deleteMany({ where: { id, lessonId, lesson: { submodule: { module: { courseId } } } } });
+    await audit(actor, "ficha.eliminar", `Ficha eliminada de ${await courseLabel(courseId)}`, { entity: "curso", entityId: courseId });
+  }
+  revalidatePath(back);
+  redirect(withFlash(back, "ok", "eliminado"));
 }
 
 export async function deleteLesson(formData: FormData) {
@@ -385,21 +468,33 @@ export async function deleteQuiz(formData: FormData) {
   await done(str(formData, "courseId"), "eliminado");
 }
 
+const questionType = z.enum(["SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE"]);
+const optionsSchema = z
+  .array(z.object({ text: z.string().trim().min(1).max(500), correct: z.boolean() }))
+  .min(2)
+  .max(8);
+
+// Cuántas opciones correctas admite cada tipo de pregunta (vale para exámenes y fichas).
+function hasValidCorrect(q: { type: z.infer<typeof questionType>; options: { correct: boolean }[] }) {
+  const correct = q.options.filter((o) => o.correct).length;
+  if (q.type === "TRUE_FALSE") return q.options.length === 2 && correct === 1;
+  if (q.type === "SINGLE_CHOICE") return correct === 1;
+  return correct >= 1;
+}
+
 const questionSchema = z
+  .object({ type: questionType, text: z.string().trim().min(1).max(1000), options: optionsSchema })
+  .refine(hasValidCorrect);
+
+// Ficha de una lección «Fichas»: pregunta + opciones + retroalimentación que se muestra al responder.
+const cardSchema = z
   .object({
-    type: z.enum(["SINGLE_CHOICE", "MULTIPLE_CHOICE", "TRUE_FALSE"]),
+    type: questionType,
     text: z.string().trim().min(1).max(1000),
-    options: z
-      .array(z.object({ text: z.string().trim().min(1).max(500), correct: z.boolean() }))
-      .min(2)
-      .max(8),
+    feedback: z.string().trim().min(1).max(2000),
+    options: optionsSchema,
   })
-  .refine((q) => {
-    const correct = q.options.filter((o) => o.correct).length;
-    if (q.type === "TRUE_FALSE") return q.options.length === 2 && correct === 1;
-    if (q.type === "SINGLE_CHOICE") return correct === 1;
-    return correct >= 1;
-  });
+  .refine(hasValidCorrect);
 
 export async function saveQuestion(formData: FormData) {
   const actor = await requireStaff();

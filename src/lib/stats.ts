@@ -168,6 +168,7 @@ export async function getCourseReport(
         },
       },
       certificates: {
+        where: { kind: "COURSE" }, // el reporte muestra el certificado final, no los de módulo
         orderBy: { issuedAt: "desc" },
         take: 1,
         select: { id: true, code: true, issuedAt: true, expiresAt: true },

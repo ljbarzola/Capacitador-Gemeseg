@@ -19,6 +19,8 @@ export default async function CertificatesPage() {
     select: {
       id: true,
       code: true,
+      kind: true,
+      moduleTitle: true,
       courseTitle: true,
       issuedAt: true,
       expiresAt: true,
@@ -26,15 +28,17 @@ export default async function CertificatesPage() {
       enrollment: { select: { courseId: true, course: { select: { published: true } } } },
     },
   });
-  // Solo el certificado más reciente de cada curso se puede renovar.
+  // Solo el certificado final más reciente de cada curso se puede renovar (renueva todo el curso).
   const latestByEnrollment = new Map<string, string>();
-  for (const c of certificates) if (!latestByEnrollment.has(c.enrollmentId)) latestByEnrollment.set(c.enrollmentId, c.id);
+  for (const c of certificates) {
+    if (c.kind === "COURSE" && !latestByEnrollment.has(c.enrollmentId)) latestByEnrollment.set(c.enrollmentId, c.id);
+  }
 
   return (
     <>
       <PageHeader
         title="Mis certificados"
-        subtitle="Se generan solos al completar cada curso. Puede descargarlos en PDF cuando los necesite."
+        subtitle="Recibe uno al finalizar cada módulo y uno final al completar el curso. Puede descargarlos en PDF cuando los necesite."
         actions={
           <LinkButton href="/verificar" variant="secondary">
             Verificar un certificado
@@ -43,7 +47,7 @@ export default async function CertificatesPage() {
       />
       {certificates.length === 0 ? (
         <Empty>
-          Todavía no tiene certificados. Al completar un curso aparecerá aquí.{" "}
+          Todavía no tiene certificados. Al finalizar un módulo o completar un curso aparecerá aquí.{" "}
           <Link href="/panel" className="font-semibold text-navy underline">
             Ver mis cursos
           </Link>
@@ -68,7 +72,12 @@ export default async function CertificatesPage() {
                 c.enrollment.course.published;
               return (
                 <tr key={c.id}>
-                  <Td className="font-medium">{c.courseTitle}</Td>
+                  <Td className="font-medium">
+                    {c.courseTitle}
+                    <span className="mt-0.5 block text-xs font-normal text-zinc-500">
+                      {c.kind === "MODULE" ? `Módulo: ${c.moduleTitle ?? ""}` : "Certificado final del curso"}
+                    </span>
+                  </Td>
                   <Td className="text-zinc-600">{formatDate(c.issuedAt)}</Td>
                   <Td>
                     <div className="flex flex-col items-start gap-1">

@@ -16,6 +16,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       holderName: true,
       holderCedula: true,
       courseTitle: true,
+      kind: true,
+      moduleTitle: true,
       issuedAt: true,
       expiresAt: true,
       enrollment: { select: { userId: true } },

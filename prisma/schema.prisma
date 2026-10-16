@@ -38,6 +38,7 @@ model User {
   assignedByMe     Enrollment[]        @relation("AssignedBy")
   lessonProgress   LessonProgress[]
   quizAttempts     QuizAttempt[]
+  moduleCompletions ModuleCompletion[]
   feedback         CourseFeedback[]
   coursesCreated   Course[]
   sessionsTaught   Lesson[]            @relation("SessionInstructor")
@@ -121,10 +122,27 @@ model Module {
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   title    String
   order    Int
+  // Al finalizar el módulo la persona recibe un certificado propio (vigencia = la del curso).
+  issuesCertificate Boolean @default(true)
 
-  submodules Submodule[]
+  submodules  Submodule[]
+  completions ModuleCompletion[]
 
   @@index([courseId])
+}
+
+// "Finalizar módulo": la persona pulsó el botón al terminar todas sus actividades. Solo cuenta si es
+// posterior al inicio del ciclo (Enrollment.cycleStartedAt), igual que el avance de las lecciones.
+model ModuleCompletion {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId    String
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  completedAt DateTime @default(now())
+
+  @@unique([userId, moduleId])
+  @@index([moduleId])
 }
 
 model Submodule {
@@ -148,6 +166,7 @@ enum LessonType {
   TEXT
   FILE
   SESSION // sesión en vivo (Meet, Zoom, Teams…) con fecha, hora, enlace e instructor
+  CARDS // fichas de pregunta y respuesta con retroalimentación inmediata (formativas, no califican)
 }
 
 model Lesson {
@@ -168,9 +187,38 @@ model Lesson {
 
   progress   LessonProgress[]
   attendance SessionAttendance[]
+  cards      LessonCard[]
 
   @@index([submoduleId])
   @@index([instructorId])
+}
+
+// ───────────── Fichas de pregunta y respuesta (lecciones CARDS) ─────────────
+// Son formativas: no guardan respuestas ni cuentan para nota. Al responder se muestra siempre la
+// retroalimentación. Las opciones correctas nunca se envían al navegador antes de responder.
+
+model LessonCard {
+  id       String       @id @default(cuid())
+  lessonId String
+  lesson   Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  type     QuestionType
+  text     String
+  feedback String // concepto / explicación que se muestra al responder, acierte o no
+  order    Int
+
+  options LessonCardOption[]
+
+  @@index([lessonId])
+}
+
+model LessonCardOption {
+  id        String     @id @default(cuid())
+  cardId    String
+  card      LessonCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  text      String
+  isCorrect Boolean    @default(false)
+
+  @@index([cardId])
 }
 
 // ───────────── Asistencia a sesiones en vivo ─────────────
@@ -292,11 +340,21 @@ model LessonProgress {
   @@unique([userId, lessonId])
 }
 
+// COURSE = certificado final del curso (el de siempre); MODULE = certificado de un módulo.
+enum CertificateKind {
+  COURSE
+  MODULE
+}
+
 model Certificate {
-  id           String     @id @default(cuid())
-  code         String     @unique // verificación pública vía QR
+  id           String          @id @default(cuid())
+  code         String          @unique // verificación pública vía QR
   enrollmentId String
-  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  enrollment   Enrollment      @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  kind         CertificateKind @default(COURSE)
+  // Solo MODULE: id y título del módulo tal como estaban al emitir (sin relación: sobrevive si se borra).
+  moduleId     String?
+  moduleTitle  String?
   // Datos tal como estaban al emitir: el certificado no cambia si luego se edita el curso o el usuario.
   holderName   String
   holderCedula String

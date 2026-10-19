@@ -74,118 +74,6 @@ const file = (title, asset) => ({ type: "FILE", title, asset });
 
 // ───────────── Cursos ─────────────
 const courses = [
-  {
-    title: "Inducción a Gemeseg Seguridad (Ejemplo)",
-    description:
-      "Primer curso para el personal que ingresa: quiénes somos, cómo se trabaja en cada puesto y qué se espera de cada guardia." + NOTE,
-    progression: "SEQUENTIAL",
-    published: true,
-    recertMonths: 12,
-    due: 30,
-    modules: [
-      {
-        title: "Conozca Gemeseg",
-        subs: [
-          {
-            title: "Nuestra empresa y su misión",
-            lessons: [
-              text(
-                "Qué hacemos y por qué importa",
-                "Gemeseg Seguridad presta servicios de vigilancia y protección a empresas, conjuntos residenciales e instituciones. Cada puesto que cubrimos es un compromiso: las personas y los bienes de nuestros clientes dependen de que usted esté atento, presente y bien preparado.\n\nNuestra misión es proteger a las personas, los bienes y la información de nuestros clientes con personal capacitado, responsable y confiable.\n\nLos valores que guían el trabajo diario son:\n\n- Responsabilidad: cumplir el puesto y los horarios asignados.\n- Integridad: actuar con honestidad, incluso cuando nadie lo supervisa.\n- Respeto: trato cortés a clientes, visitantes y compañeros.\n- Prevención: anticiparse a los riesgos antes de que ocurran.",
-              ),
-              text(
-                "Cadena de mando y a quién reportar",
-                "En cada puesto existe una cadena de mando clara: el guardia reporta al supervisor de zona, este al jefe de operaciones y este a la gerencia. Reportar por el canal correcto evita confusiones y permite reaccionar a tiempo.\n\nReglas básicas:\n\n1. Toda novedad se reporta de inmediato a su supervisor, aunque parezca menor.\n2. Las solicitudes del cliente se atienden dentro de las consignas del puesto. Si una solicitud las contradice, consulte antes con el supervisor.\n3. Registre en la bitácora la hora, el hecho, las personas involucradas y lo que usted hizo.\n\nUna bitácora clara protege al guardia, al cliente y a la empresa.",
-              ),
-            ],
-            quiz: {
-              passing: 70,
-              questions: [
-                single("¿Qué debe hacer ante una novedad en su puesto, aunque parezca menor?", "Reportarla de inmediato a su supervisor y registrarla en la bitácora", [
-                  "Esperar al cambio de turno para comentarla",
-                  "Resolverla solo, sin avisar a nadie",
-                  "Comentarla únicamente con el cliente",
-                ]),
-                tf("Una solicitud del cliente que contradice las consignas del puesto debe cumplirse sin consultar a nadie.", false),
-                single("¿Qué significa actuar con integridad?", "Actuar con honestidad incluso cuando nadie lo supervisa", [
-                  "Cumplir solo cuando el supervisor está presente",
-                  "Hacer lo que más convenga al guardia",
-                  "Evitar reportar los errores propios",
-                ]),
-              ],
-            },
-          },
-          {
-            title: "Presentación personal y recibo del puesto",
-            lessons: [
-              text(
-                "Uniforme, aseo y puntualidad",
-                "La imagen del guardia es la primera impresión que se lleva el cliente. Presente siempre el uniforme completo, limpio y en buen estado, el calzado lustrado, el cabello y la barba cuidados y la credencial a la vista.\n\nLlegue con anticipación (al menos 15 minutos antes del inicio del turno) para recibir el puesto sin apuros. La puntualidad también es seguridad: un puesto sin relevo a tiempo es un puesto desprotegido.",
-              ),
-              text(
-                "Recibo y entrega del puesto",
-                "El cambio de turno es un momento crítico. Antes de que se retire su compañero, verifique juntos:\n\n- Las novedades registradas en la bitácora del turno anterior.\n- El estado de los equipos: radio, linterna, detector, llaves y cámaras.\n- Las consignas vigentes del puesto y cualquier orden especial.\n- Los accesos, cerraduras y alarmas.\n\nFirme la bitácora solo cuando haya revisado todo. Al entregar su puesto, haga lo mismo con quien lo releva.",
-              ),
-              link("Afiliación al IESS: consulte sus derechos", "https://www.iess.gob.ec/"),
-            ],
-            quiz: {
-              passing: 70,
-              questions: [
-                multi(
-                  "Marque lo que debe verificar al recibir un puesto:",
-                  ["Las novedades de la bitácora del turno anterior", "El estado de la radio y la linterna", "Las consignas vigentes del puesto"],
-                  ["El menú de la cafetería del cliente", "El horario de salida de otro puesto"],
-                ),
-                single("¿Con cuánta anticipación conviene llegar a su turno?", "Al menos 15 minutos antes, para recibir el puesto", [
-                  "Justo a la hora de inicio",
-                  "Cuando termine de desayunar",
-                  "Solo si es el primer día en el puesto",
-                ]),
-              ],
-            },
-          },
-        ],
-      },
-      {
-        title: "Conducta profesional",
-        subs: [
-          {
-            title: "Código de conducta y confidencialidad",
-            lessons: [
-              text(
-                "Trato con clientes y visitantes",
-                "Salude con cortesía, identifíquese si se lo piden y mantenga siempre un tono calmado y respetuoso, incluso si la otra persona está molesta. Escuche, explique con claridad la norma que debe cumplir y ofrezca una alternativa cuando exista.\n\nNunca discuta, levante la voz ni responda a provocaciones. Si la situación se complica, mantenga la calma y llame a su supervisor.",
-              ),
-              text(
-                "Confidencialidad de la información",
-                "Lo que usted ve y escucha en su puesto es información reservada del cliente: horarios, rutas, ubicación de bienes, sistemas de seguridad, nombres de personas.\n\n- No comparta esta información con nadie ajeno al servicio, ni siquiera con conocidos o familiares.\n- No publique fotos ni videos de las instalaciones en redes sociales.\n- Si alguien le pregunta por detalles del servicio, no los dé y avise a su supervisor.\n\nRevelar información puede poner en riesgo a personas y causar la pérdida del contrato.",
-              ),
-              text(
-                "Obsequios y favores",
-                "No acepte dinero, regalos ni favores a cambio de permitir un ingreso, hacer una excepción o dejar de reportar algo. Aceptarlos compromete su honestidad y puede ser la puerta de entrada a un delito. Si le ofrecen algo, rechácelo con amabilidad y reporte el intento.",
-              ),
-            ],
-            quiz: {
-              passing: 70,
-              questions: [
-                single("Un conocido le pregunta por mensaje a qué hora sale el transporte de valores de su cliente. ¿Qué hace?", "No da la información y reporta el intento a su supervisor", [
-                  "Se lo dice, porque es de confianza",
-                  "Le da solo la hora aproximada",
-                  "Lo ignora y no reporta nada",
-                ]),
-                tf("Puede publicar fotos del interior de las instalaciones del cliente si no se ve a ninguna persona.", false),
-                multi(
-                  "Son conductas inaceptables en el puesto:",
-                  ["Aceptar dinero de un visitante por dejarlo pasar", "Abandonar el puesto sin autorización", "Compartir las rutas del cliente con un amigo"],
-                  ["Reportar una novedad al supervisor", "Saludar con cortesía a los visitantes"],
-                ),
-              ],
-            },
-          },
-        ],
-      },
-    ],
-  },
 
   {
     title: "Prevención de riesgos y uso de extintores (Ejemplo)",
@@ -472,145 +360,12 @@ const courses = [
     ],
   },
 
-  {
-    title: "Uso proporcional de la fuerza y derechos humanos (Ejemplo)",
-    description:
-      "Principios que rigen la actuación del personal de seguridad privada y cómo aplicarlos en situaciones reales. Nota mínima de 80 % y solo dos intentos por examen. El certificado no vence." + NOTE,
-    progression: "SEQUENTIAL",
-    published: true,
-    recertMonths: null,
-    due: 45,
-    modules: [
-      {
-        title: "Principios de actuación",
-        subs: [
-          {
-            title: "Legalidad, necesidad y proporcionalidad",
-            lessons: [
-              text(
-                "Los tres principios",
-                "Toda actuación del personal de seguridad debe cumplir tres principios:\n\n- Legalidad: solo se actúa dentro de lo que permiten la ley y las consignas del puesto. Un guardia no tiene las facultades de la Policía Nacional.\n- Necesidad: se recurre a la fuerza únicamente cuando no existe otra forma de evitar un daño.\n- Proporcionalidad: la respuesta debe ser acorde a la amenaza; nunca mayor.\n\nEn caso de duda, priorice la seguridad de las personas, evite el enfrentamiento y pida apoyo al 911 y a su supervisor.",
-              ),
-              text(
-                "Escala de respuesta",
-                "Ante un conflicto se sube de nivel solo si el anterior no funcionó y la situación lo exige:\n\n1. Presencia: su sola presencia uniformada previene muchos incidentes.\n2. Comunicación verbal: pida, explique, advierta con tono firme y respetuoso.\n3. Control sin fuerza: bloquear un paso, acompañar a una persona fuera del área.\n4. Contacto físico mínimo: solo si hay riesgo inmediato y de acuerdo con su capacitación y los protocolos.\n5. Última instancia: defensa propia o de terceros ante una amenaza grave e inminente.\n\nCada vez que use fuerza debe reportarlo de inmediato por escrito a su supervisor.",
-              ),
-            ],
-            quiz: {
-              passing: 80,
-              maxAttempts: 2,
-              questions: [
-                single("¿Qué significa el principio de proporcionalidad?", "Que la respuesta debe ser acorde a la amenaza, nunca mayor", ["Que siempre se responde con la misma fuerza que usó el otro", "Que se usa la fuerza antes de dialogar", "Que solo se actúa si el cliente lo ordena"]),
-                tf("Un guardia de seguridad privada tiene las mismas facultades que la Policía Nacional.", false),
-                single("¿Cuál es el primer nivel de respuesta ante un conflicto?", "La presencia y la comunicación verbal", ["El contacto físico", "El uso de elementos de defensa", "Retener a la persona"]),
-              ],
-            },
-          },
-        ],
-      },
-      {
-        title: "Derechos humanos en el servicio",
-        subs: [
-          {
-            title: "Trato digno y límites de la actuación",
-            lessons: [
-              text(
-                "Trato digno a toda persona",
-                "Todas las personas, incluso quienes cometen una falta, tienen derecho a un trato digno. Esto significa:\n\n- No insultar, humillar ni amenazar.\n- No discriminar por apariencia, origen, género, condición social o discapacidad.\n- No realizar revisiones ni registros que no estén autorizados por las consignas y hechos con respeto a la intimidad.\n- No retener a una persona contra su voluntad fuera de lo que permita la ley.",
-              ),
-              text(
-                "Qué hacer ante un hecho delictivo",
-                "Si presencia un delito, su prioridad es la seguridad de las personas, incluida la suya. Mantenga la calma, no persiga ni se enfrente a quien huye, llame al 911 y reporte a su supervisor. Preserve el lugar y los objetos, y anote lo que observó.\n\nSi la ley y el protocolo del puesto permiten retener a una persona sorprendida en el acto, hágalo sin violencia innecesaria y entréguela de inmediato a la Policía Nacional.",
-              ),
-            ],
-            quiz: {
-              passing: 80,
-              maxAttempts: 2,
-              questions: [
-                multi("Es un trato indebido hacia una persona:", ["Insultarla o humillarla", "Discriminarla por su apariencia"], ["Pedirle que se identifique con cortesía", "Explicarle la norma del lugar"]),
-                single("Si presencia un robo y el ladrón huye, usted debe:", "Llamar al 911, reportar a su supervisor y no perseguirlo", ["Perseguirlo hasta atraparlo", "Dispararle si lleva algo robado", "Ignorar el hecho"]),
-              ],
-            },
-          },
-          {
-            title: "Casos prácticos",
-            lessons: [
-              text(
-                "Caso 1: visitante que se niega a identificarse",
-                "Un visitante llega a un edificio de oficinas y se niega a registrarse y a mostrar su cédula, diciendo que «ya conoce a todos». Las consignas del puesto exigen registro para todos.\n\nPiense: ¿cuál es el primer paso? ¿Cuándo llamaría a su supervisor? ¿Qué NO haría?\n\nRespuesta esperada: explicar con calma la norma, ofrecer alternativas (que la persona a visitar baje a recibirlo), no permitir el ingreso sin registro y, si insiste, llamar al supervisor. Nunca discutir, empujar ni retener.",
-              ),
-              text(
-                "Caso 2: persona agresiva en el acceso",
-                "Una persona en evidente estado de ebriedad intenta ingresar a un conjunto residencial y empieza a gritar insultos. Otros residentes observan.\n\nPiense: ¿cómo mantiene la calma? ¿Qué nivel de respuesta corresponde?\n\nRespuesta esperada: mantener distancia prudente, hablar con tono firme y tranquilo, no responder a las provocaciones, bloquear el paso sin contacto físico, pedir apoyo al supervisor y, si hay riesgo, al 911. Registrar el hecho en la bitácora.",
-              ),
-            ],
-            quiz: {
-              passing: 80,
-              maxAttempts: 2,
-              questions: [
-                single("Un visitante se niega a registrarse. Lo primero que hace es:", "Explicar con calma la norma y ofrecer alternativas", ["Dejarlo pasar para evitar problemas", "Empujarlo para impedir el paso", "Gritarle que debe cumplir"]),
-                single("Ante una persona agresiva que insulta, usted:", "Mantiene la distancia y la calma, y pide apoyo", ["Le responde con el mismo tono", "Lo sujeta de inmediato por la fuerza", "Se va del puesto"]),
-                tf("Cada vez que use la fuerza debe reportarlo de inmediato por escrito a su supervisor.", true),
-              ],
-            },
-          },
-        ],
-      },
-    ],
-  },
 
-  {
-    title: "Atención al cliente y comunicación por radio (Ejemplo)",
-    description:
-      "Cómo atender al público con claridad y cortesía, y cómo comunicarse por radio de forma breve y precisa. Curso libre y sin exámenes: solo se completa revisando las lecciones." + NOTE,
-    progression: "FREE",
-    published: true,
-    recertMonths: 12,
-    modules: [
-      {
-        title: "Atención al público",
-        subs: [
-          {
-            title: "El primer contacto",
-            lessons: [
-              text(
-                "Saludar e informar",
-                "El guardia es muchas veces la primera persona que ve un visitante. Salude siempre («Buenos días, bienvenido a…»), mire a los ojos, hable con claridad y pregunte con quién desea comunicarse.\n\nDé indicaciones precisas y completas (piso, oficina, ascensor) y, si no sabe algo, no improvise: consulte y vuelva con la respuesta.",
-              ),
-              text(
-                "Cuando la persona está molesta",
-                "Cuando alguien se muestra molesto:\n\n1. Escuche sin interrumpir.\n2. Muestre empatía: «Entiendo que es un inconveniente».\n3. Explique con calma la norma y la razón.\n4. Ofrezca una alternativa o derive al supervisor.\n\nNo se tome los insultos como algo personal y nunca discuta.",
-              ),
-            ],
-          },
-        ],
-      },
-      {
-        title: "Comunicación por radio",
-        subs: [
-          {
-            title: "Procedimiento radial",
-            lessons: [
-              text(
-                "Mensajes breves y claros",
-                "La radio es un canal compartido: sea breve y preciso.\n\n- Piense antes de hablar y presione el botón un segundo antes de empezar.\n- Identifique a quién llama y quién habla: «Central, de Puesto 2».\n- Espere la confirmación: «Adelante, Puesto 2».\n- Dé el mensaje completo y corto, y cierre con «Cambio».\n- Nunca transmita información confidencial ni use la radio para conversaciones personales.",
-              ),
-              text(
-                "Alfabeto fonético",
-                "Para deletrear placas, nombres o códigos sin confusión se usa el alfabeto fonético internacional: Alfa, Bravo, Charlie, Delta, Echo, Foxtrot, Golf, Hotel, India, Juliett, Kilo, Lima, Mike, November, Oscar, Papa, Quebec, Romeo, Sierra, Tango, Uniform, Victor, Whiskey, X-ray, Yankee, Zulu.\n\nEjemplo: la placa PBA-1234 se transmite «Papa, Bravo, Alfa, uno, dos, tres, cuatro».",
-              ),
-              link("Consulta: el alfabeto fonético completo", "https://es.wikipedia.org/wiki/Alfabeto_fon%C3%A9tico_de_la_OTAN"),
-            ],
-          },
-        ],
-      },
-    ],
-  },
 
   {
     title: "Plan de emergencia y evacuación (Ejemplo, mixto)",
     description:
-      "Curso mixto: conceptos que estudia a su ritmo y tres clases en vivo con el instructor (una ya realizada y dos próximas). Las sesiones usan enlaces de ejemplo: el instructor coloca el enlace real al programarlas. La asistencia la registra el instructor y cuenta para completar el curso; las sesiones nunca bloquean el contenido." + NOTE,
+      "Curso mixto: conceptos que estudia a su ritmo y tres clases en vivo con el instructor (una ya realizada y dos próximas). Las sesiones usan enlaces de ejemplo: el instructor coloca el enlace real al programarlas. La asistencia la registra el instructor, pero es formativa: no cuenta para completar el curso ni impide el certificado, y las sesiones nunca bloquean el contenido." + NOTE,
     progression: "SEQUENTIAL",
     published: true,
     recertMonths: 12,
@@ -628,6 +383,24 @@ const courses = [
               text(
                 "Rutas de evacuación y punto de encuentro",
                 "Toda persona que trabaja en un puesto debe conocer, antes de que ocurra una emergencia, la ruta de evacuación más corta, una ruta alterna y el punto de encuentro.\n\nAl evacuar: mantenga la calma, no use ascensores, ayude a quien lo necesite sin ponerse en riesgo, cierre puertas sin llave y diríjase al punto de encuentro, donde se verifica que todos estén presentes.",
+              ),
+              video("Video: qué hacer ante un conato de incendio", "https://www.youtube.com/watch?v=TxFhV-V5p50"),
+              link("ECU 911: servicio integrado de emergencias", "https://www.ecu911.gob.ec/"),
+              cards(
+                "Fichas: ¿qué hago al evacuar?",
+                "Responda cada ficha: al elegir una opción verá una ventana con la retroalimentación. No cuentan para la nota.",
+                [
+                  card(
+                    (t) => single(t, "El punto de encuentro, por la ruta señalizada", ["Su vehículo en el estacionamiento", "De vuelta a su puesto a recoger sus cosas"]),
+                    "Al evacuar, usted debe dirigirse a:",
+                    "Siempre al punto de encuentro, por la ruta de evacuación más corta y despejada. No regrese por pertenencias: cada minuto cuenta y el conteo de personas se hace allí.",
+                  ),
+                  card(
+                    (t) => tf(t, false),
+                    "Durante una evacuación se recomienda usar los ascensores para ir más rápido.",
+                    "Falso. Los ascensores pueden quedar atrapados si falla la energía o hay humo. Use siempre las escaleras de emergencia, sin correr y sin empujar.",
+                  ),
+                ],
               ),
             ],
             quiz: {
@@ -688,31 +461,6 @@ const courses = [
     ],
   },
 
-  {
-    title: "Control de accesos y rondas de vigilancia (Borrador de ejemplo)",
-    description:
-      "Curso en preparación, todavía sin publicar: sirve para ver cómo se ve un borrador, un examen sin preguntas y un módulo vacío." + NOTE,
-    progression: "SEQUENTIAL",
-    published: false,
-    recertMonths: 12,
-    modules: [
-      {
-        title: "Control de accesos",
-        subs: [
-          {
-            title: "Registro de personas y vehículos",
-            lessons: [text("Qué se registra y por qué", "Contenido en preparación.")],
-          },
-          {
-            title: "Prácticas",
-            lessons: [],
-            quiz: { passing: 70, questions: [] },
-          },
-        ],
-      },
-      { title: "Rondas de vigilancia", subs: [] },
-    ],
-  },
 ];
 
 // ───────────── Archivos de ejemplo ─────────────

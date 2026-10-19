@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-19 — Solo 3 cursos de ejemplo, con lecciones de varios tipos
+- `scripts/seed-ejemplos.mjs` deja **3 cursos de ejemplo**: Prevención de riesgos y extintores (fichas, video, enlace, exámenes), Primeros auxilios básicos (video, imagen, archivo, enlace; curso libre) y Plan de emergencia y evacuación (mixto: sesiones en vivo, y ahora también video, enlace y fichas). Se quitan Inducción, Uso proporcional de la fuerza, Atención al cliente y el borrador de Control de accesos.
+- La descripción del curso mixto ya no dice que la asistencia cuenta para completar el curso (es formativa).
+- En producción la descripción y las lecciones nuevas del curso mixto ya se aplicaron desde el panel de administración; los cursos sobrantes se retiran desde allí o recargando los ejemplos con el script (que reemplaza los cursos «(Ejemplo)»).
+
 ## 2026-10-19 — El índice del curso se actualiza al completar una lección o aprobar un examen
 - Hallazgo en la prueba en producción: tras «Marcar como completada» o aprobar un examen el índice (lado izquierdo) seguía con el avance y el módulo anteriores hasta recargar la página (p. ej. «3 de 16» cuando ya eran 4, o el módulo anterior aún abierto). Ahora esas dos acciones recalculan el índice (`revalidatePath` del layout, como ya hacía «Finalizar módulo»). Solo `cursos/[courseId]/actions.ts`; sin migración.
 

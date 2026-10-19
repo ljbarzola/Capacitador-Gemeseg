@@ -76,7 +76,7 @@ export function CardsPlayer({ courseId, lessonId, cards }: { courseId: string; l
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2">
-        {cards.map((card, index) => {
+        {cards.map((card) => {
           const multiple = card.type === "MULTIPLE_CHOICE";
           const state = status[card.id];
           return (
@@ -89,7 +89,6 @@ export function CardsPlayer({ courseId, lessonId, cards }: { courseId: string; l
             >
               <div className="flex items-start justify-between gap-2">
                 <h2 id={`ficha-${card.id}`} className="font-semibold leading-snug text-navy">
-                  <span className="mr-1.5 text-sm font-medium text-zinc-500">Ficha {index + 1}.</span>
                   {card.text}
                 </h2>
                 {state === "correct" && (

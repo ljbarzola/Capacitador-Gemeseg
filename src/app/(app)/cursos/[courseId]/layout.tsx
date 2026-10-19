@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCourseAccess } from "@/lib/dal";
-import { getOutlineCached, persistLegacyModules } from "@/lib/progress";
+import { getOutline, getOutlineCached, persistLegacyModules, syncEnrollment } from "@/lib/progress";
 import { CourseSidebar } from "./course-sidebar";
 
 export default async function CourseLayout({
@@ -11,9 +11,19 @@ export default async function CourseLayout({
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
-  const { user, preview } = await getCourseAccess(courseId);
-  const outline = await getOutlineCached(courseId, preview ? null : user.id);
+  const { user, preview, enrollment } = await getCourseAccess(courseId);
+  let outline = await getOutlineCached(courseId, preview ? null : user.id);
   if (!outline) notFound();
+  // Cubre avances anteriores a la finalización automática: un módulo ya terminado se finaliza (y
+  // certifica) y un curso con todos los módulos finalizados se completa al abrirlo.
+  if (!preview) {
+    const current = outline.modules.find((m) => m.id === outline!.currentModuleId);
+    const pending = (current?.ready && !current.finalized) || (outline.complete && enrollment?.status !== "COMPLETED");
+    if (pending) {
+      await syncEnrollment(user.id, courseId);
+      outline = (await getOutline(courseId, user.id)) ?? outline;
+    }
+  }
   // Quien ya venía avanzado recibe sus módulos terminados como finalizados (y su certificado).
   if (!preview) await persistLegacyModules(user.id, courseId, outline);
 

@@ -171,7 +171,8 @@ export default async function CoursePage({
           </p>
           <h2 className="text-xl text-navy">{current.title}</h2>
           <p className="text-sm text-zinc-600">
-            {currentItems.filter((i) => i.done).length} de {currentItems.length} actividades de este módulo completadas.
+            {currentItems.filter((i) => i.lessonType !== "SESSION" && i.done).length} de{" "}
+            {currentItems.filter((i) => i.lessonType !== "SESSION").length} actividades de este módulo completadas.
           </p>
           {current.ready && !current.finalized ? (
             <div className="flex flex-col gap-2 rounded-lg border border-green-200 bg-green-50 p-4">
@@ -190,9 +191,7 @@ export default async function CoursePage({
               </div>
             </div>
           ) : current.finalized ? (
-            <p className="text-sm text-zinc-600">
-              Módulo finalizado. Falta que el instructor registre su asistencia a las sesiones en vivo para completar el curso.
-            </p>
+            <p className="text-sm text-zinc-600">Módulo finalizado.</p>
           ) : null}
         </Card>
       )}

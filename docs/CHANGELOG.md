@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-10-19 — Módulos como acordeón
+- El selector del índice pasa a **acordeón**: cada módulo es un encabezado con su estado (`✓` finalizado, en curso, 🔒 bloqueado); el desplegado muestra sus submódulos y lecciones, y al abrir otro el anterior se pliega. Los bloqueados no se abren. «Finalizar módulo» sigue dentro del módulo actual. Solo pantalla (`module-selector.tsx`); sin migración. Sin probar a mano en el navegador.
+
 ## 2026-10-16 — Los módulos como lista desplegable (ajuste del cambio de abajo)
 - **Lista desplegable de módulos en el índice del curso.** El primer despliegue del día escondía todos los módulos menos el actual y no se podía volver atrás; no gustó. Ahora arriba del índice hay un selector «Módulo» con **todos** los módulos, cada uno con su estado: `✓` finalizado, `●` en curso, `🔒` bloqueado. Debajo se muestra solo el contenido del módulo elegido. Al entrar queda en el módulo actual y, si se abre una actividad de otro módulo, la lista la sigue; tras «Finalizar módulo» pasa sola al siguiente.
 - **Módulos finalizados: se pueden volver a abrir** para repasar (contenido, fichas y examen); el avance y los certificados no se pierden.

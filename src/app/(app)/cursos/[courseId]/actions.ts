@@ -37,6 +37,8 @@ export async function completeLesson(formData: FormData) {
       update: { completedAt: new Date() },
     });
     await syncEnrollment(userId, courseId);
+    // El índice del curso (layout) se vuelve a calcular: marcas, avance y módulo abierto al día.
+    revalidatePath(`/cursos/${courseId}`, "layout");
   }
 
   const fresh = (await getOutline(courseId, userId)) ?? outline;
@@ -151,7 +153,11 @@ export async function submitQuiz(formData: FormData) {
     data: { quizId: quiz.id, userId, answers, score, passed },
     select: { id: true },
   });
-  if (passed) await syncEnrollment(userId, courseId);
+  if (passed) {
+    await syncEnrollment(userId, courseId);
+    // Aprobar puede finalizar el módulo (y abrir el siguiente): el índice debe reflejarlo ya.
+    revalidatePath(`/cursos/${courseId}`, "layout");
+  }
   redirect(`${back}?intento=${attempt.id}`);
 }
 

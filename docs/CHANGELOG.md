@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-10-19 — El índice del curso se actualiza al completar una lección o aprobar un examen
+- Hallazgo en la prueba en producción: tras «Marcar como completada» o aprobar un examen el índice (lado izquierdo) seguía con el avance y el módulo anteriores hasta recargar la página (p. ej. «3 de 16» cuando ya eran 4, o el módulo anterior aún abierto). Ahora esas dos acciones recalculan el índice (`revalidatePath` del layout, como ya hacía «Finalizar módulo»). Solo `cursos/[courseId]/actions.ts`; sin migración.
+
 ## 2026-10-19 — Módulos como acordeón
 - El selector del índice pasa a **acordeón**: cada módulo es un encabezado con su estado (`✓` finalizado, en curso, 🔒 bloqueado); el desplegado muestra sus submódulos y lecciones, y al abrir otro el anterior se pliega. Los bloqueados no se abren. «Finalizar módulo» sigue dentro del módulo actual. Solo pantalla (`module-selector.tsx`); sin migración. Sin probar a mano en el navegador.
 
